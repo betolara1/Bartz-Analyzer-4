@@ -1,11 +1,14 @@
-import { cn } from "../ui/utils"
+import { cn } from "./ui/utils"
+
+export type ErrorType = 'ItemSemCodigo' | 'ItemSemQuantidade' | 'ItemSemPreco' | 'CadastroCorCoringa' | 'PecaMuxarabi' | 'Maquina2530Ausente' | 'Maquina2534Ausente' | 'Maquina2341Ausente' | 'Maquina2525Ausente' | 'Programa2530NaoGerado' | 'Programa2534NaoGerado' | 'Programa2341NaoGerado' | 'Programa2525NaoGerado'
 
 interface BadgeErroProps {
-  type: 'ItemSemCodigo' | 'ItemSemQuantidade' | 'ItemSemPreco' | 'CadastroCorCoringa' | 'PecaMuxarabi' | 'Maquina2530Ausente' | 'Maquina2534Ausente' | 'Maquina2341Ausente' | 'Maquina2525Ausente' | 'Programa2530NaoGerado' | 'Programa2534NaoGerado' | 'Programa2341NaoGerado' | 'Programa2525NaoGerado'
+  type?: ErrorType | string
+  error?: ErrorType | string // Alias for backward compatibility
   className?: string
 }
 
-const errorMessages = {
+const errorMessages: Record<string, string> = {
   ItemSemCodigo: 'ITEM SEM CÓDIGO',
   ItemSemQuantidade: 'ITEM SEM QUANTIDADE', 
   ItemSemPreco: 'ITEM SEM PREÇO',
@@ -21,15 +24,20 @@ const errorMessages = {
   Programa2525NaoGerado: 'PROGRAMA NÃO GERADO PARA PLUGIN 2525'
 }
 
-export function BadgeErro({ type, className }: BadgeErroProps) {
+export function BadgeErro({ type, error, className }: BadgeErroProps) {
+  const finalType = (type || error) as string
+  const message = errorMessages[finalType] || finalType
+  
+  if (!message) return null
+
   return (
     <span 
       className={cn(
-        "inline-flex items-center px-2 py-1 rounded text-xs bg-[#E74C3C]/10 text-[#E74C3C] border border-[#E74C3C]/20 whitespace-nowrap",
+        "inline-flex items-center px-2 py-1 rounded text-[10px] font-bold bg-[#E74C3C]/10 text-[#E74C3C] border border-[#E74C3C]/20 whitespace-nowrap",
         className
       )}
     >
-      {errorMessages[type]}
+      {message}
     </span>
   )
 }

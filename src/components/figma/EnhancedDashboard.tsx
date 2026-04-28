@@ -3,12 +3,13 @@ import { Button } from "../ui/button"
 import { Input } from "../ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { Table, TableBody } from "../ui/table"
-import { CardKPI } from "./CardKPI"
-import { ChipStatus } from "./ChipStatus"
-import { BadgeErro } from "./BadgeErro"
+import { CardKPI } from "../CardKPI"
+import { ChipStatus } from "../ChipStatus"
+import { BadgeErro } from "../BadgeErro"
 import { AutoFixBadge } from "../AutoFixBadge"
 import { Badge } from "../ui/badge"
 import { TableHeaderComponent } from "./TableHeader"
+import { TableRowComponent } from "./TableRow"
 import { 
   Play, 
   RotateCcw, 
@@ -159,63 +160,12 @@ export function EnhancedDashboard({ onNavigateToConfig, showState = 'normal' }: 
             <TableHeaderComponent />
             <TableBody>
               {showState === 'loading' ? (
-                <tr className="border-[#2C2C2C] hover:bg-[#2C2C2C]/30">
-                  <td colSpan={7} className="text-center py-8">
-                    <div className="flex items-center justify-center gap-2 text-[#A7A7A7]">
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-[#A7A7A7] border-t-transparent" />
-                      Processando arquivos...
-                    </div>
-                  </td>
-                </tr>
+                <TableRowComponent variant="Loading" />
               ) : showState === 'empty' || displayFiles.length === 0 ? (
-                <tr className="border-[#2C2C2C]">
-                  <td colSpan={7} className="text-center py-8 text-[#A7A7A7]">
-                    Nenhum arquivo processado ainda
-                  </td>
-                </tr>
+                <TableRowComponent variant="Empty" />
               ) : (
                 displayFiles.map((file, index) => (
-                  <tr key={index} className="border-[#2C2C2C] hover:bg-[#2C2C2C]/30">
-                    <td className="font-mono text-sm p-4">{file.filename}</td>
-                    <td className="p-4">
-                      <ChipStatus variant={file.status} />
-                    </td>
-                    <td className="p-4">
-                      <div className="flex flex-wrap gap-1">
-                        {file.errors.map((error, idx) => (
-                          <BadgeErro key={idx} type={error} />
-                        ))}
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <div className="flex flex-wrap gap-1">
-                        {file.autoFixes.map((fix, idx) => (
-                          <AutoFixBadge key={idx} fix={fix} />
-                        ))}
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      {file.warnings.map((warning, idx) => (
-                        <Badge key={idx} variant="outline" className="text-[#F39C12] border-[#F39C12]/20 bg-[#F39C12]/10">
-                          {warning}
-                        </Badge>
-                      ))}
-                    </td>
-                    <td className="text-[#A7A7A7] text-sm p-4">{file.timestamp}</td>
-                    <td className="p-4">
-                      <div className="flex gap-1">
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                          <FolderOpen className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                          <RefreshCw className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
+                  <TableRowComponent key={index} file={file as any} />
                 ))
               )}
             </TableBody>

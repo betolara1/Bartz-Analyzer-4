@@ -7,7 +7,7 @@ import {
   ChipStatusOK, 
   ChipStatusERRO, 
   ChipStatusFERRAGENS 
-} from "./ChipStatus"
+} from "../ChipStatus"
 
 import { 
   BadgeErroItemSemCodigo,
@@ -19,14 +19,14 @@ import {
   BadgeErroMaquina2534Ausente,
   BadgeErroPrograma2530NaoGerado,
   BadgeErroPrograma2534NaoGerado
-} from "./BadgeErro"
+} from "../BadgeErro"
 
 import {
   CardKPIRecebidos,
   CardKPICorretos, 
   CardKPIInconformidades,
   CardKPIFerragens
-} from "./CardKPI"
+} from "../CardKPI"
 
 import {
   ToastSuccess,

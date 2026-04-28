@@ -18,23 +18,10 @@ import {
 } from "./ui/alert-dialog";
 import { toast } from "sonner";
 import { Badge } from "./ui/badge";
-import { StatusChip, type Status } from "./StatusChip";
+import { ChipStatus as StatusChip } from "./ChipStatus";
+import { type Status, type Row } from "../types";
 import { X, FileJson, AlertTriangle, Search, CheckCircle, Check, Grid3X3, ChevronDown, ChevronRight, FileText, Package, Zap, Database, Layers, Info, RefreshCw, Copy } from "lucide-react";
 
-type Row = {
-  filename: string;
-  fullpath: string;
-  status?: Status;
-  errors?: string[];
-  autoFixes?: string[];
-  warnings?: string[];
-  tags?: string[];
-  timestamp?: string;
-  meta?: {
-    machines?: Array<{ id?: string; name?: string }>;
-    [k: string]: any;
-  };
-};
 
 function FileDetailDrawer({
   open,

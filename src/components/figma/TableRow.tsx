@@ -1,16 +1,19 @@
 import { TableCell, TableRow } from "../ui/table"
-import { ChipStatus } from "./ChipStatus"
-import { BadgeErro } from "./BadgeErro"
+import { ChipStatus } from "../ChipStatus"
+import { BadgeErro } from "../BadgeErro"
+import { type FileData } from "../../types"
 import { AutoFixBadge } from "../AutoFixBadge"
 import { Button } from "../ui/button"
 import { Badge } from "../ui/badge"
 import { Eye, FolderOpen, RefreshCw } from "lucide-react"
 
+
 interface TableRowProps {
-  variant: 'Default' | 'Error' | 'FerragesOnly' | 'Loading' | 'Empty'
+  variant?: 'Default' | 'Error' | 'FerragesOnly' | 'Loading' | 'Empty'
+  file?: FileData
 }
 
-export function TableRowComponent({ variant }: TableRowProps) {
+export function TableRowComponent({ variant, file }: TableRowProps) {
   if (variant === 'Loading') {
     return (
       <TableRow className="border-[#2C2C2C] hover:bg-[#2C2C2C]/30">
@@ -61,37 +64,37 @@ export function TableRowComponent({ variant }: TableRowProps) {
     }
   }
 
-  const data = rowData[variant as keyof typeof rowData]
+  const data = file || (variant ? rowData[variant as keyof typeof rowData] : rowData.Default)
 
   return (
     <TableRow className="border-[#2C2C2C] hover:bg-[#2C2C2C]/30">
-      <TableCell className="font-mono text-sm">{data.filename}</TableCell>
-      <TableCell>
+      <TableCell className="font-mono text-sm p-4">{data.filename}</TableCell>
+      <TableCell className="p-4">
         <ChipStatus variant={data.status} />
       </TableCell>
-      <TableCell>
+      <TableCell className="p-4">
         <div className="flex flex-wrap gap-1">
           {data.errors.map((error, idx) => (
             <BadgeErro key={idx} type={error} />
           ))}
         </div>
       </TableCell>
-      <TableCell>
+      <TableCell className="p-4">
         <div className="flex flex-wrap gap-1">
           {data.autoFixes.map((fix, idx) => (
             <AutoFixBadge key={idx} fix={fix} />
           ))}
         </div>
       </TableCell>
-      <TableCell>
+      <TableCell className="p-4">
         {data.warnings.map((warning, idx) => (
           <Badge key={idx} variant="outline" className="text-[#F39C12] border-[#F39C12]/20 bg-[#F39C12]/10">
             {warning}
           </Badge>
         ))}
       </TableCell>
-      <TableCell className="text-[#A7A7A7] text-sm">{data.timestamp}</TableCell>
-      <TableCell>
+      <TableCell className="text-[#A7A7A7] text-sm p-4">{data.timestamp}</TableCell>
+      <TableCell className="p-4">
         <div className="flex gap-1">
           <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
             <Eye className="h-4 w-4" />

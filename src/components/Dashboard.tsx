@@ -5,8 +5,9 @@ import { Input } from "./ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { Badge } from "./ui/badge";
 import { Label } from "./ui/label";
-import { StatusChip, type Status } from "./StatusChip";
-import { ErrorBadge } from "./ErrorBadge";
+import { ChipStatus as StatusChip } from "./ChipStatus";
+import { BadgeErro as ErrorBadge } from "./BadgeErro";
+import { type Status, type Row } from "../types";
 import {
   CheckCircle, XCircle, Package, Grid3X3, Zap, Filter,
   Play, Pause, RefreshCw, Calendar, Save,
@@ -24,25 +25,6 @@ import {
 } from "./ui/alert-dialog";
 import FileDetailDrawer from "./FileDetailDrawer";
 
-// tipos
-type Row = {
-  filename: string;
-  fullpath: string;
-  status?: Status;
-  errors?: string[];
-  autoFixes?: string[];
-  warnings?: string[];
-  tags?: string[];
-  timestamp?: string;
-  meta?: {
-    ferragensOnly?: boolean;
-    machines?: { id: string; name?: string }[];
-    [k: string]: any;
-  };
-  initialStatus?: Status;
-  history?: string[];
-  initialErrors?: string[];
-};
 
 // ...
 function toRow(p: any): Row | null {
@@ -429,7 +411,7 @@ export default function Dashboard() {
     });
   }, []);
 
-  const handleFileDetail = useCallback((file: Row) => {
+  const handleFileDetail = useCallback((file: any) => {
     setDetailData(file);
     setDetailOpen(true);
   }, []);

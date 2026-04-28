@@ -1,5 +1,5 @@
-import { Card } from "../ui/card"
-import { cn } from "../ui/utils"
+import { Card } from "./ui/card"
+import { cn } from "./ui/utils"
 import { FileText, CheckCircle, XCircle, Package } from "lucide-react"
 
 interface CardKPIProps {
@@ -45,7 +45,7 @@ export function CardKPI({ variant, value, className }: CardKPIProps) {
         </div>
         <div>
           <p className="text-[#A7A7A7] text-sm">{config.title}</p>
-          <p className="text-white text-2xl font-medium">{value}</p>
+          <p className="text-white text-2xl font-bold">{value}</p>
         </div>
       </div>
     </Card>
@@ -53,7 +53,7 @@ export function CardKPI({ variant, value, className }: CardKPIProps) {
 }
 
 // Componentes específicos para Figma
-export const CardKPIRecebidos = () => <CardKPI variant="Recebidos" value={156} />
-export const CardKPICorretos = () => <CardKPI variant="Corretos" value={142} />
-export const CardKPIInconformidades = () => <CardKPI variant="Inconformidades" value={12} />
-export const CardKPIFerragens = () => <CardKPI variant="Ferragens" value={2} />
+export const CardKPIRecebidos = () => <CardKPI variant="Recebidos" value={0} />
+export const CardKPICorretos = () => <CardKPI variant="Corretos" value={0} />
+export const CardKPIInconformidades = () => <CardKPI variant="Inconformidades" value={0} />
+export const CardKPIFerragens = () => <CardKPI variant="Ferragens" value={0} />

@@ -19,6 +19,15 @@ interface FileProcessingState {
   ferragensCount: number
 }
 
+const updateStats = (prev: FileProcessingState, result: ProcessResult): FileProcessingState => ({
+  ...prev,
+  processedFiles: [...prev.processedFiles, result],
+  totalProcessed: prev.totalProcessed + 1,
+  successCount: result.status === 'ok' ? prev.successCount + 1 : prev.successCount,
+  errorCount: result.status === 'erro' ? prev.errorCount + 1 : prev.errorCount,
+  ferragensCount: result.status === 'FERRAGENS-ONLY' ? prev.ferragensCount + 1 : prev.ferragensCount
+})
+
 export function useBartzProcessor() {
   const [state, setState] = useState<FileProcessingState>({
     isProcessing: false,
@@ -115,13 +124,8 @@ export function useBartzProcessor() {
       const result = simulateXMLAnalysis(filename)
       
       setState(prev => ({
-        ...prev,
-        isProcessing: false,
-        processedFiles: [...prev.processedFiles, result],
-        totalProcessed: prev.totalProcessed + 1,
-        successCount: result.status === 'ok' ? prev.successCount + 1 : prev.successCount,
-        errorCount: result.status === 'erro' ? prev.errorCount + 1 : prev.errorCount,
-        ferragensCount: result.status === 'FERRAGENS-ONLY' ? prev.ferragensCount + 1 : prev.ferragensCount
+        ...updateStats(prev, result),
+        isProcessing: false
       }))
 
       // Toast baseado no resultado
@@ -159,14 +163,7 @@ export function useBartzProcessor() {
       setTimeout(() => {
         const result = simulateXMLAnalysis(filename)
         
-        setState(prev => ({
-          ...prev,
-          processedFiles: [...prev.processedFiles, result],
-          totalProcessed: prev.totalProcessed + 1,
-          successCount: result.status === 'ok' ? prev.successCount + 1 : prev.successCount,
-          errorCount: result.status === 'erro' ? prev.errorCount + 1 : prev.errorCount,
-          ferragensCount: result.status === 'FERRAGENS-ONLY' ? prev.ferragensCount + 1 : prev.ferragensCount
-        }))
+        setState(prev => updateStats(prev, result))
 
         processed++
         if (processed === filenames.length) {
