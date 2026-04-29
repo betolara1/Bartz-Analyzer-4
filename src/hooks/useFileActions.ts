@@ -15,6 +15,7 @@ export function useFileActions(
   const [specialItemsOpen, setSpecialItemsOpen] = useState(false);
   const [muxarabiOpen, setMuxarabiOpen] = useState(false);
   const [es08Open, setEs08Open] = useState(true);
+  const [semFilhoOpen, setSemFilhoOpen] = useState(true);
 
   // ERP Search
   const [erpSearchCode, setErpSearchCode] = useState('');
@@ -32,6 +33,7 @@ export function useFileActions(
   const [confirmCoringaOpen, setConfirmCoringaOpen] = useState(false);
   const [confirmCgOpen, setConfirmCgOpen] = useState(false);
   const [confirmMoveOpen, setConfirmMoveOpen] = useState(false);
+  const [confirmMoveEmptyOpen, setConfirmMoveEmptyOpen] = useState(false);
   const [isReplacing, setIsReplacing] = useState(false);
   const [lastReplace, setLastReplace] = useState<any>(null);
 
@@ -483,6 +485,8 @@ export function useFileActions(
     cg2Options,
     cg2Replace, setCg2Replace,
     cg2Done, setCg2Done,
+    semFilhoOpen, setSemFilhoOpen,
+    confirmMoveEmptyOpen, setConfirmMoveEmptyOpen,
 
     // Derived
     uniqueDrawings,

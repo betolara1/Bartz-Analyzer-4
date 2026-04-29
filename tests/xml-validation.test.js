@@ -83,4 +83,47 @@ describe('XML Validation Logic', () => {
         expect(payload.erros).toContainEqual({ descricao: 'PROBLEMA NA GERAÇÃO DE MÁQUINAS' });
     });
 
+    it('should detect SEM ITEM FILHO when PRECO_TOTAL="0.01" and it has no children', () => {
+        const xml = `
+        <PEDIDO>
+            <ITENS>
+                <ITEM ID="PAI_VAZIO" REFERENCIA="LN4002" PRECO_TOTAL="0.01">
+                    <MAQUINAS />
+                </ITEM>
+            </ITENS>
+        </PEDIDO>`;
+        const { payload } = validateXmlContent(xml);
+        expect(payload.erros).toContainEqual({ descricao: 'Sem Item Filho' });
+        expect(payload.tags).toContain('sem_filho');
+        expect(payload.meta.semFilhoItems).toContainEqual({ id: 'PAI_VAZIO', referencia: 'LN4002' });
+    });
+
+    it('should NOT detect SEM ITEM FILHO if PRECO_TOTAL is NOT "0.01", even if empty', () => {
+        const xml = `
+        <PEDIDO>
+            <ITENS>
+                <ITEM ID="PAI_VAZIO" REFERENCIA="LN4002" PRECO_TOTAL="100.00">
+                    <ITEMS></ITEMS>
+                </ITEM>
+            </ITENS>
+        </PEDIDO>`;
+        const { payload } = validateXmlContent(xml);
+        expect(payload.erros).not.toContainEqual({ descricao: 'Sem Item Filho' });
+    });
+
+    it('should NOT detect SEM ITEM FILHO if it has children, even if PRECO_TOTAL="0.01"', () => {
+        const xml = `
+        <PEDIDO>
+            <ITENS>
+                <ITEM ID="PAI_OK" REFERENCIA="LN4002" PRECO_TOTAL="0.01">
+                    <ITEMS>
+                        <ITEM ID="FILHO1" REFERENCIA="F01" />
+                    </ITEMS>
+                </ITEM>
+            </ITENS>
+        </PEDIDO>`;
+        const { payload } = validateXmlContent(xml);
+        expect(payload.erros).not.toContainEqual({ descricao: 'Sem Item Filho' });
+    });
+
 });

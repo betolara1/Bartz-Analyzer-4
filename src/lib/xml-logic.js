@@ -1,5 +1,6 @@
 // src/lib/xml-logic.js
 // Lógica de validação XML extraída para testes e reuso
+const { XMLParser } = require('fast-xml-parser');
 
 /**
  * Valida o conteúdo XML de um orçamento Bartz.
@@ -204,6 +205,58 @@ function validateXmlContent(txt, cfg = {}) {
         payload.warnings.push("MÓD.CURVO  NO PED");
         payload.tags.push("curvo");
     }
+
+    // ===== SEM ITEM FILHO =====
+    try {
+        const parser = new XMLParser({ 
+            ignoreAttributes: false, 
+            attributeNamePrefix: "",
+            isArray: (name) => ['ITEM', 'ITEMS', 'ITENS'].includes(name)
+        });
+        const jsonObj = parser.parse(txt);
+        
+        const allItens = [];
+        const findItens = (node) => {
+            if (!node || typeof node !== 'object') return;
+            if (Array.isArray(node)) {
+                node.forEach(findItens);
+                return;
+            }
+            if (node.ITEM) {
+                node.ITEM.forEach(item => {
+                    allItens.push(item);
+                    findItens(item);
+                });
+            }
+            for (const key in node) {
+                if (key !== 'ITEM') findItens(node[key]);
+            }
+        };
+        findItens(jsonObj);
+
+        const semFilhoMatches = [];
+        for (const item of allItens) {
+            const preco = String(item.PRECO_TOTAL || "").trim();
+            if (preco === "0.01") {
+                const itemsCol = item.ITEMS?.[0];
+                const children = itemsCol?.ITEM || [];
+                const hasChildren = Array.isArray(children) && children.length > 0;
+                
+                if (!hasChildren) {
+                    semFilhoMatches.push({
+                        id: item.ID || "",
+                        referencia: item.REFERENCIA || ""
+                    });
+                }
+            }
+        }
+
+        if (semFilhoMatches.length > 0) {
+            payload.erros.push({ descricao: "Sem Item Filho" });
+            payload.tags.push("sem_filho");
+            payload.meta.semFilhoItems = semFilhoMatches;
+        }
+    } catch (e) { }
 
     // MAQUINAS
     const machines = [];

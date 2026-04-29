@@ -706,6 +706,7 @@ ipcMain.handle('analyzer:fillReferenciaByIds', async (_e, obj) => {
   }
 });
 
+
 /** ================== IPC: SEARCH CSV PRODUCT ================== **/
 ipcMain.handle('analyzer:searchErpProduct', async (_e, params) => {
   try {

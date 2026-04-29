@@ -37,6 +37,7 @@ import { Es08Section } from "./drawer/Es08Section";
 import { ErpSearchSection } from "./drawer/ErpSearchSection";
 import { CoringaSection } from "./drawer/CoringaSection";
 import { PendingRefSection } from "./drawer/PendingRefSection";
+import { SemFilhoSection } from "./drawer/SemFilhoSection";
 
 interface FileDetailDrawerProps {
   open: boolean;
@@ -101,6 +102,14 @@ function FileDetailDrawer({ open, onOpenChange, data, onAction, onFileMoved }: F
             />
 
             <ErrorWarningSection data={data} />
+
+            <SemFilhoSection 
+              isOpen={actions.semFilhoOpen}
+              onToggle={() => actions.setSemFilhoOpen(!actions.semFilhoOpen)}
+              data={data}
+              onMoveToOk={() => actions.setConfirmMoveEmptyOpen(true)}
+              onDeleteEmpty={() => actions.setConfirmDeleteEmptyOpen(true)}
+            />
 
             <MachineSection data={data} />
 
@@ -322,6 +331,27 @@ function FileDetailDrawer({ open, onOpenChange, data, onAction, onFileMoved }: F
                   actions.handleMoveToOk();
                 }}
                 className="bg-amber-500 text-black hover:bg-amber-600"
+              >
+                Confirmar e Mover
+              </AlertDialogAction>
+            </div>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={actions.confirmMoveEmptyOpen} onOpenChange={actions.setConfirmMoveEmptyOpen}>
+          <AlertDialogContent className="bg-[#1a1a1a] border border-emerald-500/30">
+            <AlertDialogTitle className="text-white">Ignorar erro e mover para OK?</AlertDialogTitle>
+            <AlertDialogDescription className="text-zinc-300">
+              O arquivo será movido para a pasta de processados mesmo contendo itens sem componentes. Deseja continuar?
+            </AlertDialogDescription>
+            <div className="flex gap-2 justify-end">
+              <AlertDialogCancel className="bg-zinc-700 text-white hover:bg-zinc-600">Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  actions.setConfirmMoveEmptyOpen(false);
+                  actions.handleMoveToOk();
+                }}
+                className="bg-emerald-500 text-black hover:bg-emerald-600"
               >
                 Confirmar e Mover
               </AlertDialogAction>
