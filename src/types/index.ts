@@ -1,6 +1,7 @@
 export type Status = "OK" | "ERRO" | "FERRAGENS-ONLY" | "FERRAGENS";
 
 export interface Row {
+  id?: string;
   filename: string;
   fullpath: string;
   status?: Status;
@@ -29,6 +30,7 @@ export interface ProcessResult {
 }
 
 export interface FileData {
+  id?: string;
   filename: string;
   status: 'OK' | 'ERRO' | 'FERRAGENS';
   errors: any[];
