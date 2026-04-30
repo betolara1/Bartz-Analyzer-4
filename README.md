@@ -1,135 +1,175 @@
-# Bartz Analyzer 🚀
+<div align="center">
 
-> **Nota:** Este projeto foi desenvolvido com o auxílio de inteligência artificial (**Antigravity**) para garantir agilidade e padrões profissionais de código.
+# 🏗️ Bartz Analyzer
 
-Sistema robusto de monitoramento e validação de arquivos XML para o fluxo produtivo da Bartz. O **Bartz Analyzer** automatiza a detecção de erros comuns, aplica correções inteligentes e organiza a fila de produção em tempo real.
+### Sistema Inteligente de Monitoramento e Validação de XML para Produção
 
----
+[![Node.js](https://img.shields.io/badge/Node.js-20-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://nodejs.org/)
+[![Electron](https://img.shields.io/badge/Electron-37-47848F?style=for-the-badge&logo=electron&logoColor=white)](https://www.electronjs.org/)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-3.4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![Vitest](https://img.shields.io/badge/Vitest-3.2-6E9F18?style=for-the-badge&logo=vitest&logoColor=white)](https://vitest.dev/)
 
-## 🎯 Objetivo & Problema
-
-### O Problema
-No processo de exportação de pedidos para a produção, arquivos XML podem conter inconsistências técnicas (preços zerados, quantidades nulas, códigos de cores pendentes ou usinagens especiais de 37mm) que interrompem o fluxo de máquinas ou geram peças incorretas. A validação manual desses arquivos é lenta e suscetível a erro humano.
-
-### A Solução
-O Bartz Analyzer atua como uma **sentinela inteligente**. Ele monitora pastas de rede, intercepta arquivos XML no momento em que são gerados, aplica uma bateria de testes automatizados e:
-- Corrige instantaneamente erros triviais (Auto-fix).
-- Alerta sobre problemas complexos que exigem decisão humana.
-- Garante que apenas arquivos 100% validados cheguem às máquinas.
+</div>
 
 ---
 
-## 🏗️ Arquitetura do Sistema
+## 📸 Preview
 
-O sistema é construído sobre o ecossistema **Electron**, utilizando um modelo de comunicação assíncrona entre o processo principal (Node.js) e o processo de renderização (React).
+<div align="center">
+  <img src="docs/img/bartz_analyzer.png" alt="Bartz Analyzer Dashboard" width="100%">
+</div>
 
-```mermaid
-graph TD
-    subgraph "Main Process (Node.js)"
-        WA[Watcher: Chokidar] --> VL[Validation Logic]
-        VL --> FS[FileSystem: fs-extra]
-        VL --> DB[Settings: electron-store]
-    end
-    
-    subgraph "Renderer Process (React + Vite)"
-        UI[Dashboard UI] --> DS[FileDetail Drawer]
-        DS --> CP[Components: Radix UI]
-        UI --> ST[State: React Hooks]
-    end
-    
-    WA -- "analyzer:event" --> UI
-    UI -- "ipcRenderer.invoke" --> VL
+<div align="center">
+  <img src="docs/img/bartz_analyzer_2.png" width="49%" />
+  <img src="docs/img/bartz_analyzer_3.png" width="49%" />
+</div>
+
+---
+
+## 📌 Sobre o Projeto
+
+O **Bartz Analyzer** é uma ferramenta de missão crítica projetada para o ecossistema produtivo da Bartz. Ele atua como uma sentinela inteligente que monitora diretórios de rede em tempo real, interceptando arquivos XML de pedidos e aplicando uma bateria de validações técnicas rigorosas.
+
+O sistema resolve o problema de inconsistências em arquivos de exportação que podem interromper máquinas ou gerar peças incorretas.
+
+**Principais Funcionalidades:**
+
+- ✅ **Monitoramento Ativo** — Observa pastas de rede via Chokidar.
+- ✅ **Auto-Fix Inteligente** — Corrige automaticamente erros triviais de preços e quantidades.
+- ✅ **Validação de Engenharia** — Detecta usinagens de 37mm, itens coringa e cores pendentes.
+- ✅ **Interface em Tempo Real** — Dashboard dinâmico que reflete o estado da fila de produção.
+- ✅ **Integração ERP** — Busca de informações complementares para resolução de pendências.
+- ✅ **Segurança de Fluxo** — Garante que apenas arquivos validados cheguem ao destino final.
+
+---
+
+## 🏛️ Arquitetura
+
+O sistema utiliza a arquitetura do **Electron**, separando a lógica de baixo nível (Node.js) da interface do usuário (React).
+
+```
+📦 Bartz-Analyzer
+ ├── 🖥️ electron/            # Processo Principal (Main Process: Watcher, FS, IPC)
+ ├── 🎨 src/                 # Processo de Renderização (Interface React + Vite)
+ │    ├── 🧩 components/     # Componentes UI (Radix UI + Lucide)
+ │    ├── ⚓ hooks/          # Hooks customizados e comunicação IPC
+ │    ├── ⚙️ Settings.ts     # Gerenciamento de configurações persistentes
+ │    ├── 🛠️ lib/            # Configurações de Tailwind e utilitários
+ │    └── 🏷️ types/          # Definições de tipos globais
+ ├── 🧪 tests/               # Testes unitários da lógica de validação
+ ├── 📜 docs/                # Documentação e screenshots
+ └── 🐳 Dockerfile           # Configuração para ambiente containerizado
 ```
 
 ---
 
-## 🚀 Como Rodar
+## 🚀 Comunicação (IPC)
 
-### Ambiente de Desenvolvimento
-**Pré-requisitos:** [Node.js](https://nodejs.org/) (v18+)
+A integração entre os processos é feita via canais seguros de IPC (Inter-Process Communication).
 
-1. Clone o repositório e instale as dependências:
-   ```bash
-   npm install
-   ```
-2. Inicie o modo de desenvolvimento:
-   ```bash
-   npm run dev
-   ```
-   *O Vite servirá o frontend na porta 5174 e o Electron abrirá automaticamente.*
-
-### Produção / Build
-Para gerar o executável Windows (.exe):
-```bash
-npm run build
-npm run dist:win
-```
-O instalador será gerado na pasta `release/`.
-
----
-
-## 🐳 Docker
-
-Para garantir consistência no ambiente de build ou execução em containers:
-
-**Rodar via Docker Compose:**
-```bash
-docker-compose up --build
-```
-
----
-
-## 🧪 Testes
-
-O projeto utiliza **Vitest** para garantir a integridade da lógica de validação XML.
-
-**Executar a suíte de testes:**
-```bash
-npm test
-```
-*Atualmente com mais de 10 testes cobrindo: detecção de ES08, coringa, auto-fix de preços/quantidades e validação de máquinas.*
-
----
-
-## 🛠️ Exemplos de Comunicação (IPC)
-
-O sistema utiliza o padrão `invoke/handle` para comunicação segura:
-
-**Exemplo de Resposta de Validação (Payload):**
+### Exemplo de Resposta de Validação
 ```json
 {
-  "arquivo": "C:\\Caminho\\Pedido.xml",
-  "erros": [{ "descricao": "ITEM SEM CÓDIGO" }],
-  "tags": ["sem_codigo", "coringa"],
+  "arquivo": "C:\\Producao\\Pedido_001.xml",
+  "erros": [{ "descricao": "USINAGEM 37MM DETECTADA" }],
+  "tags": ["usinagem_37", "fix_applied"],
   "meta": {
-    "coringaMatches": ["PAINEL_CG1_18"],
-    "machines": [{ "id": "2341", "name": "Cyflex 900" }]
+    "machines": [{ "id": "101", "name": "Biesse Rover" }]
   }
 }
 ```
 
 ---
 
-## 📷 Screenshots
+## 🧪 Testes
 
-### Dashboard Principal
-![Dashboard](docs/img/bartz_analyzer.png)
+A integridade da lógica de validação é garantida por uma robusta suíte de testes automatizados.
 
-### Interface de Detalhes
-<p align="center">
-  <img src="docs/img/bartz_analyzer_2.png" width="48%" />
-  <img src="docs/img/bartz_analyzer_3.png" width="48%" />
-</p>
+| Camada | Ferramenta | Foco |
+|--------|------------|------|
+| **Lógica (Unit)** | Vitest | Validação XML, Detecção de ES08, Coringas |
+| **Integração** | Playwright (previsto) | Fluxo de interface e IPC |
+
+```bash
+# Executar suíte de testes
+npm test
+```
+
+---
+
+## 🐳 Rodando com Docker
+
+Ideal para garantir consistência no ambiente de build ou execução controlada:
+
+**Subir ambiente:**
+```bash
+docker-compose up --build -d
+```
 
 ---
 
-## 🤖 CI/CD (GitHub Actions)
-O projeto conta com um pipeline automatizado que executa:
-1. **Lint**: Verificação de padrões de código (**ESLint**).
-2. **Build**: Garantia de que o projeto compila sem erros.
-3. **Tests**: Execução automática da suíte de testes.
+## 💻 Desenvolvimento e Build
 
-Consulte `.github/workflows/ci.yml` para detalhes.
+**Pré-requisitos:**
+- Node.js 20+
+- npm 10+
+
+```bash
+# 1. Instalar dependências
+npm install
+
+# 2. Iniciar em modo desenvolvimento
+npm run dev
+
+# 3. Gerar executável para Windows (.exe)
+npm run build
+npm run dist:win
+```
+
+*O executável final será gerado na pasta `release/`.*
 
 ---
-© 2026 Bartz - Desenvolvido com auxílio de IA.
+
+## 📊 CI/CD (GitHub Actions)
+
+Pipeline automatizado configurado para cada Pull Request ou Push:
+
+- **Lint**: Garantia de padrões via ESLint.
+- **Build**: Validação de compilação TypeScript/Vite.
+- **Test**: Execução obrigatória de todos os testes Vitest.
+
+---
+
+## 🛠️ Stack Tecnológica
+
+| Tecnologia | Versão | Finalidade |
+|-----------|--------|------------|
+| Electron | 37 | Runtime Desktop |
+| React | 18 | Biblioteca de UI |
+| Vite | 7 | Tooling e Build do Frontend |
+| TypeScript | 5.9 | Tipagem estática |
+| Tailwind CSS | 3.4 | Estilização Utilitária |
+| Radix UI | — | Primitivos de componentes acessíveis |
+| Chokidar | 4.0 | Monitoramento de File System |
+| Vitest | 3.2 | Framework de Testes |
+| Electron Store | 11.0 | Persistência de configurações |
+
+---
+
+## 👨💻 Autor
+
+Desenvolvido por **Beto Lara** — Backend & Desktop Developer
+
+[![GitHub](https://img.shields.io/badge/GitHub-betolara1-181717?style=for-the-badge&logo=github)](https://github.com/betolara1)
+
+---
+
+<div align="center">
+
+**Bartz Analyzer** — Monitoramento inteligente para uma produção sem interrupções.
+
+> **Nota:** Este projeto foi desenvolvido com o auxílio de inteligência artificial (**Antigravity**) para garantir agilidade e padrões profissionais de código.
+
+</div>
