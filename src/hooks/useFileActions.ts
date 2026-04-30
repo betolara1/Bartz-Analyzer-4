@@ -14,8 +14,8 @@ export function useFileActions(
   const [orderInfoOpen, setOrderInfoOpen] = useState(false);
   const [specialItemsOpen, setSpecialItemsOpen] = useState(false);
   const [muxarabiOpen, setMuxarabiOpen] = useState(false);
-  const [es08Open, setEs08Open] = useState(true);
-  const [semFilhoOpen, setSemFilhoOpen] = useState(true);
+  const [es08Open, setEs08Open] = useState(false);
+  const [semFilhoOpen, setSemFilhoOpen] = useState(false);
 
   // ERP Search
   const [erpSearchCode, setErpSearchCode] = useState('');
@@ -125,6 +125,24 @@ export function useFileActions(
   }, [filteredCoringaMatches, coringaFrom]);
 
   useEffect(() => {
+    // Reset accordion states when switching files
+    setPendingRefOpen(false);
+    setErpSearchOpen(false);
+    setCoringaOpen(false);
+    setOrderInfoOpen(false);
+    setSpecialItemsOpen(false);
+    setMuxarabiOpen(false);
+    setEs08Open(false);
+    setSemFilhoOpen(false);
+
+    // Reset search fields and results
+    setErpSearchCode('');
+    setErpSearchDesc('');
+    setErpSearchType('');
+    setErpSearchResults([]);
+    setSelectedRefSingle(null);
+    setRefFillValue('');
+
     if (!data) {
       setDxfResults({});
       setOrderComments([]);

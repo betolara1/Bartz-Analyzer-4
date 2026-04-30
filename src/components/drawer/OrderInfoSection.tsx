@@ -60,7 +60,7 @@ export function OrderInfoSection({ isOpen, onToggle, loading, comments, onFetch 
                       {c.txt_titulo}
                     </div>
                   )}
-                  <div className="text-sm text-foreground leading-relaxed font-medium">
+                  <div className="text-sm text-white leading-relaxed font-medium">
                     {(c.txt_comentario || "Nenhum comentário registrado.")
                       .split(/<br\s*\/?>/gi)
                       .map((line: string, idx: number) => (

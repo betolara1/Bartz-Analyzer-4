@@ -34,6 +34,14 @@ function FileDetailDrawer({ open, onOpenChange, data, onAction, onFileMoved }: F
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [isMaximized, setIsMaximized] = useState(false);
 
+  // Reset UI state when drawer closes
+  React.useEffect(() => {
+    if (!open) {
+      setIsMaximized(false);
+      setActiveTab("overview");
+    }
+  }, [open]);
+
   if (!data && open) return null;
 
   return (
@@ -91,15 +99,6 @@ function FileDetailDrawer({ open, onOpenChange, data, onAction, onFileMoved }: F
               {/* Status Strip */}
               <div className="flex items-center gap-3 flex-wrap">
                 <ChipStatus status={data?.status || 'ERRO'} />
-                <div className="h-4 w-px bg-border" />
-                <div className="flex items-center gap-2">
-                  <div className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">ID: {data?.id || '—'}</span>
-                </div>
-                <div className="h-4 w-px bg-border" />
-                <span className="text-[10px] text-muted-foreground/80 font-medium">
-                  {data?.timestamp || "—"}
-                </span>
               </div>
             </div>
 

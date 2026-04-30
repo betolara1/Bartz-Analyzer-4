@@ -50,7 +50,7 @@ export function PendingRefSection({
 
       {isOpen && (
         <div className="p-5 space-y-5 border-t border-rose-500/10">
-          <div className="p-3 bg-rose-900/20 rounded-lg border border-rose-500/10 text-[11px] dark:text-rose-200/70 text-rose-700 leading-relaxed">
+          <div className="p-3 bg-rose-50 dark:bg-[#0a0a0a] border border-rose-100 dark:border-white/5 rounded-lg text-[11px] text-black dark:text-white leading-relaxed font-medium">
             Selecione o item detectado sem código e informe o valor correto (obtido na busca ERP acima).
           </div>
 

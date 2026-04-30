@@ -121,28 +121,36 @@ export function FileDetailTabs({ data, actions, activeTab, onTabChange }: FileDe
 /* ─── TAB: Visão Geral ─── */
 function OverviewTab({ data, actions }: { data: Row | null; actions: ReturnType<typeof useFileActions> }) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-      <div className="lg:col-span-2">
-        <InfoSection
-          data={data}
-          onReprocess={actions.handleReprocess}
-          onOpenFolder={actions.handleOpenFolder}
-        />
-      </div>
-      <ErrorWarningSection data={data} />
-      <MachineSection data={data} />
-      <ImportKeySection data={data} />
-      <OrderInfoSection
-        isOpen={actions.orderInfoOpen}
-        onToggle={() => {
-          const next = !actions.orderInfoOpen;
-          actions.setOrderInfoOpen(next);
-          if (next && actions.orderComments.length === 0) actions.fetchOrderComments();
-        }}
-        loading={actions.loadingComments}
-        comments={actions.orderComments}
-        onFetch={actions.fetchOrderComments}
+    <div className="space-y-6">
+      <InfoSection
+        data={data}
+        onReprocess={actions.handleReprocess}
+        onOpenFolder={actions.handleOpenFolder}
       />
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        {/* Coluna da Esquerda */}
+        <div className="space-y-6">
+          <ErrorWarningSection data={data} />
+          <ImportKeySection data={data} />
+        </div>
+
+        {/* Coluna da Direita */}
+        <div className="space-y-6">
+          <MachineSection data={data} />
+          <OrderInfoSection
+            isOpen={actions.orderInfoOpen}
+            onToggle={() => {
+              const next = !actions.orderInfoOpen;
+              actions.setOrderInfoOpen(next);
+              if (next && actions.orderComments.length === 0) actions.fetchOrderComments();
+            }}
+            loading={actions.loadingComments}
+            comments={actions.orderComments}
+            onFetch={actions.fetchOrderComments}
+          />
+        </div>
+      </div>
     </div>
   );
 }

@@ -57,7 +57,7 @@ export function ErpSearchSection({
 
       {isOpen && (
         <div className="p-5 space-y-4 border-t border-blue-500/10">
-          <div className="p-3 bg-blue-900/20 rounded-lg border border-blue-500/10 text-[11px] dark:text-blue-200/70 text-blue-700 leading-relaxed">
+          <div className="p-3 bg-blue-50 dark:bg-[#0a0a0a] border border-blue-100 dark:border-white/5 rounded-lg text-[11px] text-black dark:text-white leading-relaxed font-medium">
             Pesquise códigos originais no servidor para preencher campos coringa ou referências vazias.
           </div>
 

@@ -111,7 +111,7 @@ export function CoringaSection({
           {hasIndividualCoringas ? (
             filteredCoringaMatches.length > 0 ? (
               <>
-                <div className="p-3 bg-amber-900/20 rounded-lg border border-amber-500/10 text-[11px] dark:text-amber-200/70 text-amber-700 leading-relaxed">
+                <div className="p-3 bg-amber-50 dark:bg-[#0a0a0a] border border-amber-100 dark:border-white/5 rounded-lg text-[11px] text-black dark:text-white leading-relaxed font-medium">
                   Sigla genérica identificada no XML. Escolha a sigla original e o novo código para substituição definitiva.
                 </div>
 
