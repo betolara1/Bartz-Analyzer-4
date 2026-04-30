@@ -24,7 +24,7 @@ export function PendingRefSection({
   if (!showSection) return null;
 
   return (
-    <section className="rounded-xl border border-rose-500/30 bg-rose-500/5 overflow-hidden shadow-[0_4px_20px_rgba(244,63,94,0.1)] transition-all duration-300">
+    <section className="rounded-xl border border-rose-200 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-500/5 overflow-hidden shadow-sm dark:shadow-[0_4px_20px_rgba(244,63,94,0.1)] transition-all duration-300">
       <div
         className="px-5 py-4 flex items-center justify-between cursor-pointer group"
         onClick={onToggle}
@@ -34,8 +34,8 @@ export function PendingRefSection({
             <AlertTriangle className="h-4 w-4" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-white tracking-tight leading-none">Itens com Referência Pendente</h3>
-            <p className="text-[10px] text-rose-300/60 font-medium uppercase tracking-widest mt-1">
+            <h3 className="text-sm font-bold text-foreground tracking-tight leading-none">Itens com Referência Pendente</h3>
+            <p className="text-[10px] dark:text-rose-300/60 text-muted-foreground font-medium uppercase tracking-widest mt-1">
               Vínculo de códigos ERP para componentes sem referência
             </p>
           </div>
@@ -50,13 +50,13 @@ export function PendingRefSection({
 
       {isOpen && (
         <div className="p-5 space-y-5 border-t border-rose-500/10">
-          <div className="p-3 bg-rose-900/20 rounded-lg border border-rose-500/10 text-[11px] text-rose-200/70 leading-relaxed">
+          <div className="p-3 bg-rose-900/20 rounded-lg border border-rose-500/10 text-[11px] dark:text-rose-200/70 text-rose-700 leading-relaxed">
             Selecione o item detectado sem código e informe o valor correto (obtido na busca ERP acima).
           </div>
 
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-[9px] text-[#A7A7A7] uppercase font-bold tracking-widest pl-1">Selecionar Item do XML</label>
+              <label className="text-[9px] text-muted-foreground uppercase font-bold tracking-widest pl-1">Selecionar Item do XML</label>
               <select
                 value={selectedRefSingle ?? ''}
                 onChange={(e) => setSelectedRefSingle(e.target.value || null)}
@@ -81,12 +81,12 @@ export function PendingRefSection({
                 <div className="p-4 rounded-xl bg-black/40 border border-rose-500/10 space-y-4 relative overflow-hidden group">
                   <div className="absolute top-0 right-0 p-2 opacity-5 pointer-events-none group-hover:opacity-10 transition-opacity"><Package className="h-12 w-12 text-rose-500" /></div>
                   <div className="relative z-10">
-                    <div className="text-[9px] text-rose-300 font-bold uppercase mb-1.5 opacity-60 tracking-tighter">Descrição Completa</div>
+                    <div className="text-[9px] dark:text-rose-300 text-rose-700 font-bold uppercase mb-1.5 opacity-60 tracking-tighter">Descrição Completa</div>
                     <div className="text-xs text-white/90 italic font-medium leading-relaxed">"{item.descricao || '—'}"</div>
                   </div>
                   {item.caminhoItemCatalog && (
                     <div className="relative z-10">
-                      <div className="text-[9px] text-rose-300 font-bold uppercase mb-1.5 opacity-60 tracking-tighter">Localização no Catálogo</div>
+                      <div className="text-[9px] dark:text-rose-300 text-rose-700 font-bold uppercase mb-1.5 opacity-60 tracking-tighter">Localização no Catálogo</div>
                       <div className="text-[10px] text-zinc-400 font-mono break-all leading-tight bg-[#0a0a0a] p-2 rounded-lg border border-white/[0.03]">
                         {item.caminhoItemCatalog}
                       </div>
@@ -97,7 +97,7 @@ export function PendingRefSection({
             })()}
 
             <div className="space-y-1.5">
-              <label className="text-[9px] text-[#A7A7A7] uppercase font-bold tracking-widest pl-1">Novo Código de Referência (ERP)</label>
+              <label className="text-[9px] text-muted-foreground uppercase font-bold tracking-widest pl-1">Novo Código de Referência (ERP)</label>
               <input
                 value={refFillValue}
                 onChange={(e) => setRefFillValue(e.target.value)}

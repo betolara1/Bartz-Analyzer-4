@@ -11,7 +11,7 @@ interface OrderInfoSectionProps {
 
 export function OrderInfoSection({ isOpen, onToggle, loading, comments, onFetch }: OrderInfoSectionProps) {
   return (
-    <section className="rounded-xl border border-[#232323] bg-[#1B1B1B] overflow-hidden shadow-sm transition-all duration-300 hover:border-[#2C2C2C]">
+    <section className="rounded-xl border border-blue-200 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-500/5 overflow-hidden shadow-sm transition-all duration-300">
       <div
         className="px-5 py-4 flex items-center justify-between cursor-pointer group"
         onClick={onToggle}
@@ -21,8 +21,8 @@ export function OrderInfoSection({ isOpen, onToggle, loading, comments, onFetch 
             <Info className="h-4 w-4" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-white tracking-tight">Informações do Pedido</h3>
-            <p className="text-[10px] text-[#A7A7A7] font-medium uppercase tracking-widest">Consulta de observações de fábrica</p>
+            <h3 className="text-sm font-bold text-foreground tracking-tight">Informações do Pedido</h3>
+            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-widest">Consulta de observações de fábrica</p>
           </div>
         </div>
         <div className={`p-2 rounded-full bg-[#111] border border-[#232323] transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>
@@ -35,7 +35,7 @@ export function OrderInfoSection({ isOpen, onToggle, loading, comments, onFetch 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Database className="h-3.5 w-3.5 text-zinc-500" />
-              <span className="text-[10px] uppercase font-bold text-zinc-500 tracking-widest">Dados do Servidor</span>
+              <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Dados do Servidor</span>
             </div>
             <button
               onClick={(e) => { e.stopPropagation(); onFetch(); }}
@@ -49,7 +49,7 @@ export function OrderInfoSection({ isOpen, onToggle, loading, comments, onFetch 
 
           {loading ? (
             <div className="flex items-center justify-center py-10 rounded-lg bg-[#111] border border-[#232323] animate-pulse">
-              <div className="text-[10px] uppercase font-bold text-[#444] tracking-widest">Carregando dados...</div>
+              <div className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Carregando dados...</div>
             </div>
           ) : comments.length > 0 ? (
             <div className="space-y-4">
@@ -60,7 +60,7 @@ export function OrderInfoSection({ isOpen, onToggle, loading, comments, onFetch 
                       {c.txt_titulo}
                     </div>
                   )}
-                  <div className="text-sm text-white/90 leading-relaxed font-medium">
+                  <div className="text-sm text-foreground leading-relaxed font-medium">
                     {(c.txt_comentario || "Nenhum comentário registrado.")
                       .split(/<br\s*\/?>/gi)
                       .map((line: string, idx: number) => (
@@ -75,8 +75,8 @@ export function OrderInfoSection({ isOpen, onToggle, loading, comments, onFetch 
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-10 rounded-lg bg-[#111] border border-dashed border-[#232323] space-y-2 opacity-60">
-              <AlertTriangle className="h-8 w-8 text-[#A7A7A7]" />
-              <p className="text-sm italic text-[#555]">Nenhum comentário encontrado no servidor.</p>
+              <AlertTriangle className="h-8 w-8 text-muted-foreground" />
+              <p className="text-sm italic text-muted-foreground">Nenhum comentário encontrado no servidor.</p>
             </div>
           )}
         </div>

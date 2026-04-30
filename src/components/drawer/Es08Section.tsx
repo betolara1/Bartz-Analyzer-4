@@ -14,11 +14,16 @@ interface Es08SectionProps {
   onFix: (drawing: string) => void;
   onMoveToOk: () => void;
   onOpenConfirmMove: () => void;
+  onOpenConfirmMoveOk: () => void;
+  isResolved: boolean;
+  otherPendingCount: number;
+  onResolve: () => void;
 }
 
 export function Es08Section({
   isOpen, onToggle, data, uniqueDrawings, dxfSearching, dxfResults, dxfFixing,
-  onSearchAll, onFix, onMoveToOk, onOpenConfirmMove
+  onSearchAll, onFix, onMoveToOk, onOpenConfirmMove, onOpenConfirmMoveOk,
+  isResolved, otherPendingCount, onResolve
 }: Es08SectionProps) {
   const matches = (data?.meta?.es08Matches || []) as any[];
   if (matches.length === 0) return null;
@@ -33,7 +38,7 @@ export function Es08Section({
   });
 
   return (
-    <section className="rounded-xl border border-rose-500/30 bg-rose-500/5 overflow-hidden shadow-[0_4px_20px_rgba(244,63,94,0.1)] transition-all duration-300">
+    <section className="rounded-xl border border-rose-200 dark:border-rose-500/30 bg-rose-50 dark:bg-rose-500/5 overflow-hidden shadow-sm dark:shadow-[0_4px_20px_rgba(244,63,94,0.1)] transition-all duration-300">
       <div
         className="px-5 py-4 flex items-center justify-between cursor-pointer group"
         onClick={onToggle}
@@ -43,14 +48,18 @@ export function Es08Section({
             <Zap className="h-4 w-4" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-white tracking-tight leading-none">Itens ES08 - Duplado 37MM</h3>
-            <p className="text-[10px] text-rose-300/60 font-medium uppercase tracking-widest mt-1">
+            <h3 className="text-sm font-bold text-foreground tracking-tight leading-none">Itens ES08 - Duplado 37MM</h3>
+            <p className="text-[10px] dark:text-rose-300/60 text-muted-foreground font-medium uppercase tracking-widest mt-1">
               {matches.length} componente(s) detectado(s)
             </p>
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <div className="h-2 w-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)] animate-pulse" />
+          {isResolved ? (
+            <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+          ) : (
+            <div className="h-2 w-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)] animate-pulse" />
+          )}
           <div className={`p-2 rounded-full bg-rose-500/5 border border-rose-500/10 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>
             <ChevronDown className="h-4 w-4 text-rose-400/50" />
           </div>
@@ -63,18 +72,18 @@ export function Es08Section({
             {matches.map((item, i) => (
               <div key={i} className="p-4 rounded-xl bg-black/40 border border-rose-500/10 group hover:border-rose-500/30 transition-all">
                 <div className="flex items-start justify-between mb-2">
-                  <div className="text-[9px] uppercase font-bold text-rose-300 tracking-widest opacity-60">ID do Item</div>
+                  <div className="text-[9px] uppercase font-bold dark:text-rose-300 text-rose-700 tracking-widest opacity-60">ID do Item</div>
                   <span className="font-mono text-[10px] text-white bg-[#0a0a0a] px-2 py-0.5 rounded border border-white/5">{item.id || "—"}</span>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Database className="h-3 w-3 text-zinc-500" />
-                    <span className="text-xs text-zinc-400">Ref:</span>
+                    <span className="text-xs text-muted-foreground">Ref:</span>
                     <span className="text-xs text-white/90 font-medium truncate">{item.referencia || "—"}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Layers className="h-3 w-3 text-zinc-500" />
-                    <span className="text-xs text-zinc-400">Dese:</span>
+                    <span className="text-xs text-muted-foreground">Dese:</span>
                     <span className="text-xs text-white/90 font-medium truncate">{item.desenho || "—"}</span>
                   </div>
                 </div>
@@ -89,8 +98,8 @@ export function Es08Section({
                   <Search className="h-4 w-4" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-white uppercase tracking-tight">Busca de Desenho DXF</h4>
-                  <p className="text-[9px] text-zinc-500 font-bold uppercase">{uniqueDrawings.length} arquivos detectados</p>
+                  <h4 className="text-xs font-bold text-foreground uppercase tracking-tight">Busca de Desenho DXF</h4>
+                  <p className="text-[9px] text-muted-foreground font-bold uppercase">{uniqueDrawings.length} arquivos detectados</p>
                 </div>
               </div>
               <button
@@ -137,8 +146,8 @@ export function Es08Section({
                     {result?.status === 'found' && dxfData && (
                       <div className="p-4 space-y-4">
                         <div className="p-3 bg-[#0a0a0a] rounded-lg border border-white/[0.03]">
-                          <div className="text-[9px] uppercase font-bold text-zinc-500 mb-1 tracking-widest pl-1">Diretório do Arquivo</div>
-                          <div className="font-mono text-[10px] text-zinc-400 break-all select-all leading-relaxed pr-1 underline underline-offset-4 decoration-rose-500/20">
+                          <div className="text-[9px] uppercase font-bold text-muted-foreground mb-1 tracking-widest pl-1">Diretório do Arquivo</div>
+                          <div className="font-mono text-[10px] dark:text-zinc-400 text-zinc-600 break-all select-all leading-relaxed pr-1 underline underline-offset-4 decoration-rose-500/20">
                             {dxfData.path}
                           </div>
                         </div>
@@ -255,30 +264,43 @@ export function Es08Section({
                 </div>
               )}
               <div className="flex flex-col">
-                <span className={`text-[11px] font-bold uppercase tracking-widest ${allOk ? 'text-emerald-400' : 'text-amber-400'}`}>
+                <span className={`text-[11px] font-bold uppercase tracking-widest ${allOk ? 'dark:text-emerald-400 text-emerald-600' : 'dark:text-amber-400 text-amber-600'}`}>
                   {allOk ? 'Validação Concluída' : 'Atenção Necessária'}
                 </span>
-                <span className="text-[10px] text-zinc-500 font-medium">
+                <span className="text-[10px] text-muted-foreground font-medium">
                   {allOk ? 'Todos os desenhos estão em conformidade.' : 'Alguns desenhos requerem correção DXF.'}
                 </span>
               </div>
             </div>
-            <button
-              onClick={() => {
-                if (allOk) {
-                  onMoveToOk();
-                } else {
-                  onOpenConfirmMove();
-                }
-              }}
-              className={`px-5 py-2.5 rounded-xl text-white text-xs font-bold uppercase tracking-widest shadow-lg transition-all flex items-center gap-2 active:scale-95 ${allOk
-                ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/20'
-                : 'bg-amber-600 hover:bg-amber-500 shadow-amber-900/20'
-                }`}
-            >
-              Mover para OK
-              <ChevronRight className="h-4 w-4" />
-            </button>
+            {isResolved ? (
+              <div className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                <Check className="h-4 w-4" />
+                <span className="text-xs font-bold uppercase tracking-widest">Resolvido ✓</span>
+              </div>
+            ) : (
+              <button
+                onClick={() => {
+                  if (allOk) {
+                    onResolve();
+                  } else {
+                    onOpenConfirmMove();
+                  }
+                }}
+                className={`px-5 py-2.5 rounded-xl text-white text-xs font-bold uppercase tracking-widest shadow-lg transition-all flex items-center gap-2 active:scale-95 ${allOk
+                  ? (otherPendingCount === 0
+                      ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/20'
+                      : 'bg-amber-600 hover:bg-amber-500 shadow-amber-900/20')
+                  : 'bg-amber-600 hover:bg-amber-500 shadow-amber-900/20'
+                  }`}
+              >
+                {allOk && otherPendingCount === 0 
+                  ? 'Resolver e Mover para OK' 
+                  : allOk 
+                    ? `Marcar como Resolvido (${otherPendingCount} pendente)` 
+                    : 'Mover para OK'}
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            )}
           </div>
         </div>
       )}

@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Row } from "../types";
 
@@ -34,7 +34,11 @@ export function useFileActions(
   const [confirmCgOpen, setConfirmCgOpen] = useState(false);
   const [confirmMoveOpen, setConfirmMoveOpen] = useState(false);
   const [confirmMoveEmptyOpen, setConfirmMoveEmptyOpen] = useState(false);
+  const [confirmMoveOkOpen, setConfirmMoveOkOpen] = useState(false);
   const [isReplacing, setIsReplacing] = useState(false);
+
+  // Multi-problem resolution tracking
+  const [resolvedProblems, setResolvedProblems] = useState<Set<string>>(new Set());
   const [lastReplace, setLastReplace] = useState<any>(null);
 
   // DXF / ES08
@@ -84,6 +88,18 @@ export function useFileActions(
     return Array.from(set) as string[];
   }, [data]);
 
+  // Compute active problems for the current file
+  const activeProblems = useMemo(() => {
+    const problems: string[] = [];
+    if (data?.tags?.includes('sem_filho')) problems.push('sem_filho');
+    if ((data?.meta?.es08Matches || []).length > 0) problems.push('es08');
+    return problems;
+  }, [data]);
+
+  const unresolvedProblems = useMemo(() => {
+    return activeProblems.filter(p => !resolvedProblems.has(p));
+  }, [activeProblems, resolvedProblems]);
+
   const filteredCoringaMatches = useMemo(() => {
     const rawMatches = (data?.meta?.coringaMatches || []) as string[];
     if (!erpSearchType) return rawMatches;
@@ -118,6 +134,8 @@ export function useFileActions(
       setCg1Done(false);
       setCg2Done(false);
     }
+    // Reset resolved problems when data changes
+    setResolvedProblems(new Set());
   }, [data]);
 
   // Actions
@@ -415,6 +433,31 @@ export function useFileActions(
     }
   }, [data, onAction, onFileMoved]);
 
+  // Ref to hold latest unresolvedProblems for use inside resolveAndMaybeMove
+  const unresolvedRef = useRef(unresolvedProblems);
+  unresolvedRef.current = unresolvedProblems;
+
+  const resolveAndMaybeMove = useCallback(async (problemKey: string) => {
+    setResolvedProblems(prev => {
+      const next = new Set(prev);
+      next.add(problemKey);
+      return next;
+    });
+
+    // After adding this key, check how many remain
+    const remainingAfter = unresolvedRef.current.filter(p => p !== problemKey);
+
+    if (remainingAfter.length === 0) {
+      // This was the last problem — move the file
+      await handleMoveToOk();
+    } else {
+      toast.success(
+        `Problema resolvido! Ainda resta(m) ${remainingAfter.length} problema(s) pendente(s).`,
+        { icon: '✅' }
+      );
+    }
+  }, [handleMoveToOk]);
+
   const handleReprocess = useCallback(async () => {
     if (!data) return;
     const id = toast.loading("Reprocessando...");
@@ -487,6 +530,13 @@ export function useFileActions(
     cg2Done, setCg2Done,
     semFilhoOpen, setSemFilhoOpen,
     confirmMoveEmptyOpen, setConfirmMoveEmptyOpen,
+    confirmMoveOkOpen, setConfirmMoveOkOpen,
+
+    // Multi-problem resolution
+    resolvedProblems,
+    activeProblems,
+    unresolvedProblems,
+    resolveAndMaybeMove,
 
     // Derived
     uniqueDrawings,

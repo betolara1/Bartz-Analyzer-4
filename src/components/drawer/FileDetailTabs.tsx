@@ -160,7 +160,9 @@ function ComponentsTab({ data, actions }: { data: Row | null; actions: ReturnTyp
           isOpen={actions.semFilhoOpen}
           onToggle={() => actions.setSemFilhoOpen(!actions.semFilhoOpen)}
           data={data}
-          onMoveToOk={() => actions.setConfirmMoveEmptyOpen(true)}
+          isResolved={actions.resolvedProblems.has('sem_filho')}
+          otherPendingCount={actions.unresolvedProblems.filter(p => p !== 'sem_filho').length}
+          onResolve={() => actions.resolveAndMaybeMove('sem_filho')}
         />
       </div>
       <div className="lg:col-span-2">
@@ -176,6 +178,10 @@ function ComponentsTab({ data, actions }: { data: Row | null; actions: ReturnTyp
           onFix={actions.fixFresa37to18}
           onMoveToOk={actions.handleMoveToOk}
           onOpenConfirmMove={() => actions.setConfirmMoveOpen(true)}
+          onOpenConfirmMoveOk={() => actions.setConfirmMoveOkOpen(true)}
+          isResolved={actions.resolvedProblems.has('es08')}
+          otherPendingCount={actions.unresolvedProblems.filter(p => p !== 'es08').length}
+          onResolve={() => actions.resolveAndMaybeMove('es08')}
         />
       </div>
       <SpecialItemsSection

@@ -80,7 +80,7 @@ export function CoringaSection({
   if (!showSection) return null;
 
   return (
-    <section className="rounded-xl border border-amber-500/30 bg-amber-500/5 overflow-hidden shadow-[0_4px_20px_rgba(245,158,11,0.1)] transition-all duration-300">
+    <section className="rounded-xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/5 overflow-hidden shadow-sm dark:shadow-[0_4px_20px_rgba(245,158,11,0.1)] transition-all duration-300">
       <div
         className="px-5 py-4 flex items-center justify-between cursor-pointer group"
         onClick={onToggle}
@@ -91,7 +91,7 @@ export function CoringaSection({
           </div>
           <div>
             <h3 className="text-sm font-bold text-foreground tracking-tight leading-none">Cor Coringa Detectada</h3>
-            <p className="text-[10px] text-amber-300/60 font-medium uppercase tracking-widest mt-1">
+            <p className="text-[10px] dark:text-amber-300/60 text-muted-foreground font-medium uppercase tracking-widest mt-1">
               Substituição de siglas genéricas identificadas
             </p>
           </div>
@@ -108,13 +108,13 @@ export function CoringaSection({
         <div className="p-5 space-y-4 border-t border-amber-500/10">
           {filteredCoringaMatches.length > 0 ? (
             <>
-              <div className="p-3 bg-amber-900/20 rounded-lg border border-amber-500/10 text-[11px] text-amber-200/70 leading-relaxed">
+              <div className="p-3 bg-amber-900/20 rounded-lg border border-amber-500/10 text-[11px] dark:text-amber-200/70 text-amber-700 leading-relaxed">
                 Sigla genérica identificada no XML. Escolha a sigla original e o novo código para substituição definitiva.
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-[9px] text-[#A7A7A7] uppercase font-bold tracking-widest pl-1">Sigla Encontrada</label>
+                  <label className="text-[9px] text-muted-foreground uppercase font-bold tracking-widest pl-1">Sigla Encontrada</label>
                   <select
                     value={coringaFrom ?? ""}
                     disabled={!!lastReplace}
@@ -128,7 +128,7 @@ export function CoringaSection({
                 </div>
 
                 <div className="space-y-1.5 w-full">
-                  <label className="text-[9px] text-[#A7A7A7] uppercase font-bold tracking-widest pl-1">Novo Código/Valor</label>
+                  <label className="text-[9px] text-muted-foreground uppercase font-bold tracking-widest pl-1">Novo Código/Valor</label>
                   <div className="relative">
                     <input
                       placeholder="Ex: 10.01.0000"
@@ -246,7 +246,7 @@ export function CoringaSection({
                       <>
                         {hasCoringa1 && <div className="w-px h-6 bg-amber-500/20 shrink-0" />}
                         <div className={`flex gap-2 items-center ${hasCoringa1 ? 'shrink-0' : 'flex-1'}`}>
-                          <span className="text-[9px] text-amber-300/60 font-bold uppercase tracking-widest shrink-0">CG1 →</span>
+                          <span className="text-[9px] dark:text-amber-300/60 text-amber-600/70 font-bold uppercase tracking-widest shrink-0">CG1 →</span>
                           {hasCoringa1 ? (
                             <input
                               value={cg1Replace}
@@ -303,7 +303,7 @@ export function CoringaSection({
               {/* CORINGA 2 / CG2 Row - Similar logic */}
               {(hasCoringa2 || hasCG2) && (
                 <div className="space-y-2">
-                  <label className="text-[9px] text-[#A7A7A7] uppercase font-bold tracking-widest pl-1">
+                  <label className="text-[9px] text-muted-foreground uppercase font-bold tracking-widest pl-1">
                     {hasCoringa2 ? 'CORINGA 2' : 'CG2'}
                   </label>
                   <div className="flex gap-2 items-center">
@@ -345,7 +345,7 @@ export function CoringaSection({
                       <>
                         {hasCoringa2 && <div className="w-px h-6 bg-amber-500/20 shrink-0" />}
                         <div className={`flex gap-2 items-center ${hasCoringa2 ? 'shrink-0' : 'flex-1'}`}>
-                          <span className="text-[9px] text-amber-300/60 font-bold uppercase tracking-widest shrink-0">CG2 →</span>
+                          <span className="text-[9px] dark:text-amber-300/60 text-amber-600/70 font-bold uppercase tracking-widest shrink-0">CG2 →</span>
                           {hasCoringa2 ? (
                             <input
                               value={cg2Replace}

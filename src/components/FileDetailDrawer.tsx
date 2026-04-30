@@ -200,11 +200,11 @@ function FileDetailDrawer({ open, onOpenChange, data, onAction, onFileMoved }: F
               <AlertDialogAction
                 onClick={() => {
                   actions.setConfirmMoveOpen(false);
-                  actions.handleMoveToOk();
+                  actions.resolveAndMaybeMove('es08');
                 }}
                 className="bg-amber-500 text-black hover:bg-amber-600"
               >
-                Confirmar e Mover
+                Confirmar e Resolver
               </AlertDialogAction>
             </div>
           </AlertDialogContent>
@@ -212,20 +212,45 @@ function FileDetailDrawer({ open, onOpenChange, data, onAction, onFileMoved }: F
 
         <AlertDialog open={actions.confirmMoveEmptyOpen} onOpenChange={actions.setConfirmMoveEmptyOpen}>
           <AlertDialogContent className="bg-card border border-emerald-500/30">
-            <AlertDialogTitle className="text-foreground">Ignorar erro e mover para OK?</AlertDialogTitle>
+            <AlertDialogTitle className="text-foreground">Ignorar erro e marcar como resolvido?</AlertDialogTitle>
             <AlertDialogDescription className="text-muted-foreground">
-              O arquivo será movido para a pasta de processados mesmo contendo itens sem componentes. Deseja continuar?
+              {actions.unresolvedProblems.length <= 1
+                ? 'O arquivo será movido para a pasta de processados mesmo contendo itens sem componentes. Deseja continuar?'
+                : 'Este problema será marcado como resolvido. O arquivo só será movido quando todos os problemas forem resolvidos.'}
             </AlertDialogDescription>
             <div className="flex gap-2 justify-end">
               <AlertDialogCancel className="bg-muted text-foreground hover:bg-muted/80">Cancelar</AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => {
                   actions.setConfirmMoveEmptyOpen(false);
-                  actions.handleMoveToOk();
+                  actions.resolveAndMaybeMove('sem_filho');
                 }}
                 className="bg-emerald-500 text-black hover:bg-emerald-600"
               >
-                Confirmar e Mover
+                {actions.unresolvedProblems.length <= 1 ? 'Confirmar e Mover' : 'Confirmar'}
+              </AlertDialogAction>
+            </div>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={actions.confirmMoveOkOpen} onOpenChange={actions.setConfirmMoveOkOpen}>
+          <AlertDialogContent className="bg-card border border-emerald-500/30">
+            <AlertDialogTitle className="text-foreground">Confirmar resolução?</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              {actions.unresolvedProblems.length <= 1
+                ? 'O arquivo será movido para a pasta de processados. Esta ação não pode ser desfeita facilmente.'
+                : 'Este problema será marcado como resolvido. O arquivo só será movido quando todos os problemas forem resolvidos.'}
+            </AlertDialogDescription>
+            <div className="flex gap-2 justify-end">
+              <AlertDialogCancel className="bg-muted text-foreground hover:bg-muted/80">Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  actions.setConfirmMoveOkOpen(false);
+                  actions.resolveAndMaybeMove('es08');
+                }}
+                className="bg-emerald-500 text-black hover:bg-emerald-600"
+              >
+                {actions.unresolvedProblems.length <= 1 ? 'Confirmar e Mover' : 'Confirmar'}
               </AlertDialogAction>
             </div>
           </AlertDialogContent>

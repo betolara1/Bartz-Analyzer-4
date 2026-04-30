@@ -30,7 +30,7 @@ export function ErpSearchSection({
   if (!showSection) return null;
 
   return (
-    <section className="rounded-xl border border-blue-500/30 bg-blue-500/5 overflow-hidden shadow-[0_4px_20px_rgba(59,130,246,0.1)] transition-all duration-300">
+    <section className="rounded-xl border border-blue-200 dark:border-blue-500/30 bg-blue-50 dark:bg-blue-500/5 overflow-hidden shadow-sm dark:shadow-[0_4px_20px_rgba(59,130,246,0.1)] transition-all duration-300">
       <div
         className="px-5 py-4 flex items-center justify-between cursor-pointer group"
         onClick={onToggle}
@@ -40,8 +40,8 @@ export function ErpSearchSection({
             <Search className="h-4 w-4" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-white tracking-tight leading-none">Conexão Direta ERP: Busca de Produto</h3>
-            <p className="text-[10px] text-blue-300/60 font-medium uppercase tracking-widest mt-1">
+            <h3 className="text-sm font-bold text-foreground tracking-tight leading-none">Conexão Direta ERP: Busca de Produto</h3>
+            <p className="text-[10px] dark:text-blue-300/60 text-muted-foreground font-medium uppercase tracking-widest mt-1">
               Pesquisa no servidor por códigos originais
             </p>
           </div>
@@ -56,13 +56,13 @@ export function ErpSearchSection({
 
       {isOpen && (
         <div className="p-5 space-y-4 border-t border-blue-500/10">
-          <div className="p-3 bg-blue-900/20 rounded-lg border border-blue-500/10 text-[11px] text-blue-200/70 leading-relaxed">
+          <div className="p-3 bg-blue-900/20 rounded-lg border border-blue-500/10 text-[11px] dark:text-blue-200/70 text-blue-700 leading-relaxed">
             Pesquise códigos originais no servidor para preencher campos coringa ou referências vazias.
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-[9px] text-[#A7A7A7] uppercase font-bold tracking-widest pl-1">Código do Produto</label>
+              <label className="text-[9px] text-muted-foreground uppercase font-bold tracking-widest pl-1">Código do Produto</label>
               <input
                 placeholder="Ex: 10.01.0001"
                 value={erpSearchCode}
@@ -78,7 +78,7 @@ export function ErpSearchSection({
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[9px] text-[#A7A7A7] uppercase font-bold tracking-widest pl-1">Tipo de Item</label>
+              <label className="text-[9px] text-muted-foreground uppercase font-bold tracking-widest pl-1">Tipo de Item</label>
               <select
                 value={erpSearchType}
                 onChange={(e) => {
@@ -133,7 +133,7 @@ export function ErpSearchSection({
             <div className="mt-4 space-y-2">
               <div className="rounded-lg border border-[#232323] bg-[#0a0a0a] overflow-hidden shadow-inner overflow-x-auto">
                 <table className="w-full text-[10px] min-w-[300px]">
-                  <thead className="bg-[#1B1B1B] text-[#666] border-b border-[#232323]">
+                  <thead className="bg-[#1B1B1B] text-muted-foreground border-b border-[#232323]">
                     <tr>
                       <th className="text-left px-3 py-2 font-bold uppercase tracking-widest">Cod</th>
                       <th className="text-left px-3 py-2 font-bold uppercase tracking-widest">Descrição detalhada</th>
@@ -144,9 +144,9 @@ export function ErpSearchSection({
                     {erpSearchResults.map((prod, idx) => (
                       <tr key={idx} className="hover:bg-blue-500/5 transition-colors group">
                         <td className="px-3 py-2 font-mono text-blue-400 font-bold">{prod.code}</td>
-                        <td className="px-3 py-2 text-white/70 font-medium">
+                        <td className="px-3 py-2 text-foreground/70 font-medium">
                           {prod.description}
-                          {prod.thickness && <span className="text-zinc-500 ml-1.5">- {prod.thickness} mm</span>}
+                          {prod.thickness && <span className="text-muted-foreground ml-1.5">- {prod.thickness} mm</span>}
                         </td>
                         <td className="px-3 py-2 text-right">
                           <button
