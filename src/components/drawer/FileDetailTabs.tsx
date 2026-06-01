@@ -246,6 +246,7 @@ function ActionsTab({ data, actions }: { data: Row | null; actions: ReturnType<t
           const nextState = !actions.erpSearchOpen;
           actions.setErpSearchOpen(nextState);
           actions.setCoringaOpen(nextState);
+          actions.setPendingRefOpen(nextState);
         }}
         data={data}
         erpSearchCode={actions.erpSearchCode}
@@ -275,6 +276,7 @@ function ActionsTab({ data, actions }: { data: Row | null; actions: ReturnType<t
           const nextState = !actions.coringaOpen;
           actions.setErpSearchOpen(nextState);
           actions.setCoringaOpen(nextState);
+          actions.setPendingRefOpen(nextState);
         }}
         data={data}
         coringaFrom={actions.coringaFrom}
@@ -325,7 +327,12 @@ function ActionsTab({ data, actions }: { data: Row | null; actions: ReturnType<t
       />
       <PendingRefSection
         isOpen={actions.pendingRefOpen}
-        onToggle={() => actions.setPendingRefOpen(!actions.pendingRefOpen)}
+        onToggle={() => {
+          const nextState = !actions.pendingRefOpen;
+          actions.setErpSearchOpen(nextState);
+          actions.setCoringaOpen(nextState);
+          actions.setPendingRefOpen(nextState);
+        }}
         data={data}
         selectedRefSingle={actions.selectedRefSingle}
         setSelectedRefSingle={actions.setSelectedRefSingle}

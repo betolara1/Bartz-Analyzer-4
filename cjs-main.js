@@ -265,6 +265,11 @@ async function checkCodeExistsInErp(codigo, cache = {}) {
   return exists;
 }
 
+// Cache global persistente para validação de ERP durante a sessão
+const globalErpCache = new Map();
+let globalPanelsCache = null;
+let globalColorsCache = null;
+
 // --- VALIDATION lendo conteúdo do XML e usando cfg.enableAutoFix ---
 async function validateXml(fileFullPath, cfg = {}) {
   const raw = await fsp.readFile(fileFullPath, "utf8");
@@ -282,8 +287,13 @@ async function validateXml(fileFullPath, cfg = {}) {
   try {
     const uniqueCodes = extractItemCodes(updatedTxt);
     if (uniqueCodes.length > 0) {
-      const cache = {};
+      const cache = {
+        results: globalErpCache,
+        panels: globalPanelsCache,
+        colors: globalColorsCache
+      };
       const results = [];
+
 
       // Lote de concorrência controlada de 5 por vez
       const limit = 5;
@@ -296,6 +306,10 @@ async function validateXml(fileFullPath, cfg = {}) {
         const chunkResults = await Promise.all(chunkPromises);
         results.push(...chunkResults);
       }
+
+      // Sincronizar de volta os caches de panels e colors para a variável global
+      globalPanelsCache = cache.panels;
+      globalColorsCache = cache.colors;
 
       let missingAny = false;
       for (const res of results) {
