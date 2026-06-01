@@ -30,115 +30,145 @@
 
 ## 📌 Sobre o Projeto
 
-O **Bartz Analyzer** é uma ferramenta de missão crítica projetada para o ecossistema produtivo da Bartz. Ele atua como uma sentinela inteligente que monitora diretórios de rede em tempo real, interceptando arquivos XML de pedidos e aplicando uma bateria de validações técnicas rigorosas.
+O **Bartz Analyzer** é uma ferramenta de missão crítica projetada para o ecossistema produtivo da **Bartz**. Ele atua como uma sentinela inteligente de monitoramento, validação e auto-correção de arquivos XML de pedidos gerados pelo Promob antes que estes cheguem ao chão de fábrica (maquinários como ASPAN e NCB612).
 
-O sistema resolve o problema de inconsistências em arquivos de exportação que podem interromper máquinas ou gerar peças incorretas.
-
-**Principais Funcionalidades:**
-
-- ✅ **Monitoramento Ativo** — Observa pastas de rede via Chokidar.
-- ✅ **Auto-Fix Inteligente** — Corrige automaticamente erros triviais de preços e quantidades.
-- ✅ **Validação de Engenharia** — Detecta usinagens de 37mm, itens coringa e cores pendentes.
-- ✅ **Interface em Tempo Real** — Dashboard dinâmico que reflete o estado da fila de produção.
-- ✅ **Integração ERP** — Busca de informações complementares para resolução de pendências.
-- ✅ **Segurança de Fluxo** — Garante que apenas arquivos validados cheguem ao destino final.
+O sistema resolve gargalos de inconsistências em arquivos de exportação que tradicionalmente interrompem a produção ou causam perdas de matéria-prima por usinagem incorreta.
 
 ---
 
-## 🏛️ Arquitetura
+## ⚙️ Fluxo de Operação e Arquitetura
 
-O sistema utiliza a arquitetura do **Electron**, separando a lógica de baixo nível (Node.js) da interface do usuário (React).
+O sistema monitora pastas de entrada específicas em tempo real, executa verificações integradas com APIs corporativas (ERP/Pedidos) e encaminha os arquivos processados para pastas de sucesso (`OK`) ou erro (`ERRO`), além de gerar relatórios e auditoria.
+
+### Diagrama de Fluxo e Integrações
+
+```mermaid
+graph TD
+    A[Monitor de Pastas - Chokidar] -->|Novo XML de Pedido| B(Análise Inicial do XML)
+    B --> C{Validações de Engenharia}
+    
+    C -->|1. Validação de Preços/Qtd| D[Auto-Fix Inteligente]
+    C -->|2. Códigos de Painéis| E[Consulta CSV Promob \\192.168.1.10]
+    C -->|3. Verificação de Cor Coringa| F[Consulta ERP API /api/cor]
+    C -->|4. Itens e Usinagem 37mm| G[Consulta ERP API /api/item]
+    
+    D & E & F & G --> H{Resultado da Análise}
+    
+    H -->|Sem Erros Graves| I[Mover para pasta OK]
+    H -->|Erros Impeditivos| J[Mover para pasta ERRO & Registrar Alertas]
+    
+    I & J --> K[Atualização de Fila na UI React via IPC]
+    
+    %% Scheduler Scheduler Flow
+    L[Agendador Interno - Scheduler] -->|11:30 & 17:30| M[Exportação de Relatórios CSV/JSON]
+    L -->|17:30| N[Limpeza Automática de Pastas Temporárias/Logs]
+```
+
+---
+
+## ✅ Funcionalidades Principais
+
+- **Monitoramento Ativo em Tempo Real:** Observa ativamente os diretórios locais e de rede configurados via `Chokidar`, reagindo instantaneamente a novos arquivos de pedido.
+- **Validação Técnica de Engenharia:**
+  - **Usinagem de 37mm:** Detecção automática de furações críticas que exigem atenção especial de engenharia.
+  - **Identificação de Coringa (Cor Wildcard):** Garante a consistência na substituição ou validação de cores genéricas no fluxo do pedido.
+  - **Filtragem de Maquinário Ativo:** Configurado especificamente para as diretrizes das máquinas `ASPAN` e `NCB612`.
+  - **Verificação de Painéis Promob:** Busca dinâmica de códigos de painéis válidos no diretório compartilhado (`\\192.168.1.10\Promob\codigos_paineis.csv`).
+- **Integração Fluida com APIs:**
+  - **API de Pedidos:** Resgate de metadados cruciais para conferência do lote (`/api_pedidos.php`).
+  - **API do ERP:** Validação e pesquisa de códigos/descrições de itens e registros de cores locais.
+- **Agendador Inteligente (Scheduler):**
+  - **Relatórios Diários:** Geração e exportação automática em lote de relatórios nos formatos JSON e CSV para a pasta do trabalhador às **11:30** e **17:30**.
+  - **Rotina de Limpeza:** Faxina programada diária às **17:30** para manter as pastas de processamento (`ok`, `erro`, `log_proc`, `log_erro`) limpas e otimizadas.
+- **Dashboard Interativo em Tempo Real:** Interface elegante construída com React, TypeScript e Tailwind CSS, alimentada por canais IPC bidirecionais eficientes para exibir o status em tempo real de cada análise, alertas, pendências e itens especiais.
+
+---
+
+## 🏛️ Estrutura do Código
 
 ```
 📦 Bartz-Analyzer
- ├── 🖥️ electron/            # Processo Principal (Main Process: Watcher, FS, IPC)
+ ├── 🖥️ cjs-main.js          # Arquivo de entrada do processo principal (Main Process)
+ ├── 🖥️ preload.js           # Ponte de segurança IPC entre Main e Renderer
+ ├── 🖥️ electron/            # Módulos do Processo Principal (Watcher, File System, IPC, APIs)
  ├── 🎨 src/                 # Processo de Renderização (Interface React + Vite)
- │    ├── 🧩 components/     # Componentes UI (Radix UI + Lucide)
+ │    ├── 🧩 components/     # Componentes de UI Modulares (Radix UI, Lucide)
+ │    │    └── 🗂️ drawer/    # Detalhes do pedido, Abas e Alertas de Engenharia
  │    ├── ⚓ hooks/          # Hooks customizados e comunicação IPC
- │    ├── ⚙️ Settings.ts     # Gerenciamento de configurações persistentes
- │    ├── 🛠️ lib/            # Configurações de Tailwind e utilitários
- │    └── 🏷️ types/          # Definições de tipos globais
- ├── 🧪 tests/               # Testes unitários da lógica de validação
- ├── 📜 docs/                # Documentação e screenshots
- └── 🐳 Dockerfile           # Configuração para ambiente containerizado
+ │    ├── ⚙️ Settings.ts     # Gerenciamento de configurações locais persistentes
+ │    ├── 🛠️ lib/            # Utilitários (xml-logic, tailwind-merge, etc)
+ │    └── 🏷️ types/          # Definições de tipos globais TypeScript
+ ├── 🧪 tests/               # Testes unitários da lógica de validação do XML
+ ├── 📜 docs/                # Documentação complementar, esquemas e imagens
+ └── 🐳 Dockerfile           # Configuração de containerização para ambiente de testes/build
 ```
 
 ---
 
-## 🚀 Comunicação (IPC)
+## 🚀 Comunicação entre Processos (IPC)
 
-A integração entre os processos é feita via canais seguros de IPC (Inter-Process Communication).
+O processo principal (Node/Electron) transmite relatórios de análise detalhados para o processo de renderização (React) em tempo real.
 
-### Exemplo de Resposta de Validação
+### Payload de Resposta da Validação (Exemplo)
 ```json
 {
-  "arquivo": "C:\\Producao\\Pedido_001.xml",
-  "erros": [{ "descricao": "USINAGEM 37MM DETECTADA" }],
-  "tags": ["usinagem_37", "fix_applied"],
+  "arquivo": "C:\\Producao\\67996_pedido_exemplo.xml",
+  "erros": [
+    { "descricao": "USINAGEM DE 37MM DETECTADA EM PEÇA LATERAL", "gravidade": "warning" }
+  ],
+  "tags": ["usinagem_37", "cor_coringa_resolvida"],
   "meta": {
-    "machines": [{ "id": "101", "name": "Biesse Rover" }]
+    "num_pedido": 67996,
+    "maquinas": [
+      { "id": "aspan", "name": "ASPAN" },
+      { "id": "ncb612", "name": "NCB612" }
+    ]
   }
 }
 ```
 
 ---
 
-## 🧪 Testes
+## 💻 Instalação e Desenvolvimento
 
-A integridade da lógica de validação é garantida por uma robusta suíte de testes automatizados.
-
-| Camada | Ferramenta | Foco |
-|--------|------------|------|
-| **Lógica (Unit)** | Vitest | Validação XML, Detecção de ES08, Coringas |
-| **Integração** | Playwright (previsto) | Fluxo de interface e IPC |
+### Pré-requisitos
+* **Node.js** v20 ou superior
+* **npm** v10 ou superior
 
 ```bash
-# Executar suíte de testes
-npm test
-```
-
----
-
-## 🐳 Rodando com Docker
-
-Ideal para garantir consistência no ambiente de build ou execução controlada:
-
-**Subir ambiente:**
-```bash
-docker-compose up --build -d
-```
-
----
-
-## 💻 Desenvolvimento e Build
-
-**Pré-requisitos:**
-- Node.js 20+
-- npm 10+
-
-```bash
-# 1. Instalar dependências
+# 1. Instalar as dependências do projeto
 npm install
 
-# 2. Iniciar em modo desenvolvimento
+# 2. Iniciar o ambiente de desenvolvimento (React + Electron em paralelo)
 npm run dev
+```
 
-# 3. Gerar executável para Windows (.exe)
-npm run build
+---
+
+## 📦 Como gerar o Executável (.exe)
+
+O projeto está configurado com `electron-builder` para empacotar a aplicação de forma rápida e autônoma para Windows.
+
+Execute o comando abaixo:
+```bash
 npm run dist:win
 ```
 
-*O executável final será gerado na pasta `release/`.*
+### O que o script de distribuição faz?
+1. Compila e otimiza o código React/Vite na pasta `/dist` (`npm run build`).
+2. Empacota a aplicação com suporte a atalhos na Área de Trabalho e Menu Iniciar.
+3. Produz um instalador auto-suficiente na pasta **`/release`**.
 
 ---
 
-## 📊 CI/CD (GitHub Actions)
+## 🧪 Testes
 
-Pipeline automatizado configurado para cada Pull Request ou Push:
+A integridade matemática e lógica de parsing/validação dos XMLs é testada de forma isolada com `Vitest`.
 
-- **Lint**: Garantia de padrões via ESLint.
-- **Build**: Validação de compilação TypeScript/Vite.
-- **Test**: Execução obrigatória de todos os testes Vitest.
+```bash
+# Executar a suíte de testes unitários
+npm test
+```
 
 ---
 
@@ -146,19 +176,19 @@ Pipeline automatizado configurado para cada Pull Request ou Push:
 
 | Tecnologia | Versão | Finalidade |
 |-----------|--------|------------|
-| Electron | 37 | Runtime Desktop |
-| React | 18 | Biblioteca de UI |
-| Vite | 7 | Tooling e Build do Frontend |
-| TypeScript | 5.9 | Tipagem estática |
-| Tailwind CSS | 3.4 | Estilização Utilitária |
-| Radix UI | — | Primitivos de componentes acessíveis |
-| Chokidar | 4.0 | Monitoramento de File System |
-| Vitest | 3.2 | Framework de Testes |
-| Electron Store | 11.0 | Persistência de configurações |
+| **Electron** | 37 | Runtime de Desktop nativo |
+| **React** | 18 | Interface de usuário componentizada |
+| **Vite** | 7 | Bundler e Servidor de desenvolvimento rápido |
+| **TypeScript** | 5.9 | Tipagem estática e segurança em tempo de compilação |
+| **Tailwind CSS** | 3.4 | Framework de estilização utilitária e responsiva |
+| **Radix UI** | — | Primitivos de componentes acessíveis e acessibilidade |
+| **Chokidar** | 4.0 | Monitoramento de File System de alta performance |
+| **Vitest** | 3.2 | Framework de testes rápido baseado em ESM |
+| **Electron Store** | 11.0 | Banco de dados chave-valor para configurações persistentes |
 
 ---
 
-## 👨💻 Autor
+## 👨‍💻 Contribuição e Autoria
 
 Desenvolvido por **Beto Lara** — Backend & Desktop Developer
 
@@ -170,6 +200,6 @@ Desenvolvido por **Beto Lara** — Backend & Desktop Developer
 
 **Bartz Analyzer** — Monitoramento inteligente para uma produção sem interrupções.
 
-> **Nota:** Este projeto foi desenvolvido com o auxílio de inteligência artificial (**Antigravity**) para garantir agilidade e padrões profissionais de código.
+> **Nota:** Este projeto conta com o auxílio de IA avançada (**Antigravity**) para aceleração de desenvolvimento, refinamentos visuais premium e garantia de boas práticas arquiteturais.
 
 </div>
