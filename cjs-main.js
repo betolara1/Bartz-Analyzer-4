@@ -979,18 +979,35 @@ ipcMain.handle('analyzer:replaceItemDescription', async (_e, obj) => {
       let oldDesc = "";
       let itemDrawing = desenho || "";
       
-      // Step 2: Find the old description and drawing from this item tag first
-      const matchItem = raw.match(itemRegex);
-      if (matchItem && matchItem[0]) {
+      // Step 2: Find the old description and drawing from the correct item tag
+      const matchItems = raw.match(itemRegex) || [];
+      let matchedItemTag = "";
+
+      if (desenho) {
+        for (const itemTag of matchItems) {
+          const desenhoAttrRegex = /DESENHO\s*=\s*"([^"]*)"/i;
+          const matchDes = itemTag.match(desenhoAttrRegex);
+          if (matchDes && matchDes[1] === desenho) {
+            matchedItemTag = itemTag;
+            break;
+          }
+        }
+      }
+
+      if (!matchedItemTag && matchItems.length > 0) {
+        matchedItemTag = matchItems[0];
+      }
+
+      if (matchedItemTag) {
         const descAttrRegex = /DESCRICAO\s*=\s*"([^"]*)"/i;
-        const matchDesc = matchItem[0].match(descAttrRegex);
+        const matchDesc = matchedItemTag.match(descAttrRegex);
         if (matchDesc) {
           oldDesc = matchDesc[1];
         }
         
         if (!itemDrawing) {
           const desenhoAttrRegex = /DESENHO\s*=\s*"([^"]*)"/i;
-          const matchDesenho = matchItem[0].match(desenhoAttrRegex);
+          const matchDesenho = matchedItemTag.match(desenhoAttrRegex);
           if (matchDesenho) {
             itemDrawing = matchDesenho[1];
           }
@@ -999,8 +1016,17 @@ ipcMain.handle('analyzer:replaceItemDescription', async (_e, obj) => {
 
       let c = 0;
       
-      // Step 3: Replace DESCRICAO on the ITEM tag
+      // Step 3: Replace DESCRICAO on the correct ITEM tag
       raw = raw.replace(itemRegex, (itemMatch) => {
+        if (desenho) {
+          const desenhoAttrRegex = /DESENHO\s*=\s*"([^"]*)"/i;
+          const matchDes = itemMatch.match(desenhoAttrRegex);
+          const currentDesenho = matchDes ? matchDes[1] : "";
+          if (currentDesenho !== desenho) {
+            return itemMatch;
+          }
+        }
+
         let updated = itemMatch;
         const descAttrRegex = /DESCRICAO\s*=\s*"([^"]*)"/i;
         const matchDesc = updated.match(descAttrRegex);
