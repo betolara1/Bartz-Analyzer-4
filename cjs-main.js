@@ -427,6 +427,40 @@ async function processOne(fileFullPath, cfg) {
       }
     }
 
+    // AUTO-FIX MUXARABI (MX008) - AUTOMATIZAÇÃO DE INJEÇÃO DXF
+    if (cfg.enableAutoFix && analysis.meta && analysis.meta.muxarabiItems && analysis.meta.muxarabiItems.length > 0 && cfg.drawings) {
+      let injectedCount = 0;
+      for (const item of analysis.meta.muxarabiItems) {
+        if (!item.desenho) continue;
+        const match = item.descricao?.match(/(\d+\s*x\s*\d+)/i);
+        const sizeCode = match ? match[1].replace(/\s+/g, '').toLowerCase() : null;
+        const thMatch = item.descricao?.match(/(\d{2})\s*mm/i);
+        const thickness = thMatch ? thMatch[1] : '18';
+        
+        if (sizeCode) {
+          const res = await doInjectMuxarabi({ drawingCode: item.desenho, sizeCode, thickness });
+          if (res.ok) {
+            injectedCount++;
+            if (!analysis.autoFixes) analysis.autoFixes = [];
+            analysis.autoFixes.push(`DXF: Muxarabi ${sizeCode} (${thickness}mm) aplicado no desenho ${item.desenho}`);
+          } else if (res.message && res.message.includes('já possui usinagens de muxarabi')) {
+            injectedCount++;
+            if (!analysis.autoFixes) analysis.autoFixes = [];
+            analysis.autoFixes.push(`DXF: Muxarabi já estava aplicado no desenho ${item.desenho}`);
+          }
+        }
+      }
+      
+      if (injectedCount > 0) {
+        // Assegurar que a tag "muxarabi_autofix" seja adicionada para manter rastro
+        if (!analysis.tags) analysis.tags = [];
+        analysis.tags.push("muxarabi_autofix");
+        
+        // Remover o erro "PEÇA MUXARABI" da lista pois já foi tratado automaticamente
+        analysis.erros = (analysis.erros || []).filter(e => (e.descricao || e).toUpperCase() !== "PEÇA MUXARABI");
+      }
+    }
+
     const isOK = (analysis.erros || []).length === 0;
 
     const baseName = path.basename(fileFullPath);
@@ -1849,6 +1883,478 @@ ipcMain.handle('analyzer:openDrawing', async (_e, arg) => {
 });
 
 /** ================== IPC: OPEN MUXARABI DRAWING FILE ================== **/
+function parseDxfEntities(dxfContent) {
+  const lines = dxfContent.split(/\r?\n/);
+  let entitiesStart = -1;
+  let entitiesEnd = -1;
+
+  // Search line-by-line for boundaries
+  for (let i = 0; i < lines.length; i++) {
+    const code = lines[i].trim();
+    const val = (i + 1 < lines.length) ? lines[i + 1].trim() : '';
+    if (code === '2' && val === 'ENTITIES') {
+      entitiesStart = i + 2; // the first entity's '0'
+    }
+    if (entitiesStart >= 0 && i >= entitiesStart && code === '0' && val === 'ENDSEC') {
+      entitiesEnd = i;
+      break;
+    }
+  }
+
+  if (entitiesStart < 0 || entitiesEnd < 0) {
+    return { entities: [], pieceBounds: null, hasUsinagem: false, entitiesEndLine: -1 };
+  }
+
+  const entities = [];
+  let currentType = null;
+  let currentLayer = '';
+  let currentPoints = [];
+  let rawLineStart = -1;
+
+  // Use a state machine to ensure we only treat '0' as a new entity 
+  // if it's a code, not a value.
+  let isCode = true;
+  for (let i = entitiesStart; i < entitiesEnd; i++) {
+    const text = lines[i].trim();
+    
+    if (isCode) {
+      const code = text;
+      const val = (i + 1 < lines.length) ? lines[i + 1].trim() : '';
+      
+      if (code === '0') {
+        if (currentType) {
+          entities.push({
+            type: currentType, layer: currentLayer, points: [...currentPoints],
+            rawStart: rawLineStart, rawEnd: i - 1
+          });
+        }
+        currentType = val;
+        currentLayer = '';
+        currentPoints = [];
+        rawLineStart = i;
+      } else if (code === '8') {
+        currentLayer = val;
+      } else if (code === '10') {
+        const x = parseFloat(val);
+        let y = null;
+        if (i + 2 < lines.length && lines[i + 2].trim() === '20') {
+          y = parseFloat(lines[i + 3].trim());
+        }
+        currentPoints.push({ x, y });
+      }
+      isCode = false; // Next line is a value
+    } else {
+      isCode = true; // Next line is a code
+    }
+  }
+  
+  // Save the last entity
+  if (currentType) {
+    entities.push({
+      type: currentType, layer: currentLayer, points: [...currentPoints],
+      rawStart: rawLineStart, rawEnd: entitiesEnd - 1
+    });
+  }
+
+  // Extract piece bounds from PANEL layer
+  let pieceBounds = null;
+  const panelEntities = entities.filter(e => e.layer === 'PANEL');
+  if (panelEntities.length > 0) {
+    const panel = panelEntities[0];
+    const xs = panel.points.map(p => p.x);
+    const ys = panel.points.filter(p => p.y !== null).map(p => p.y);
+    pieceBounds = {
+      minX: Math.min(...xs),
+      maxX: Math.max(...xs),
+      minY: Math.min(...ys),
+      maxY: Math.max(...ys),
+      width: Math.max(...xs) - Math.min(...xs),
+      height: Math.max(...ys) - Math.min(...ys)
+    };
+  }
+
+  const hasUsinagem = entities.some(e => /^USINAGEM_\d+$/i.test(e.layer));
+
+  return { entities, pieceBounds, hasUsinagem, entitiesEndLine: entitiesEnd, entitiesStartLine: entitiesStart };
+}
+
+/**
+ * Garante que uma layer esteja declarada na tabela LAYER do DXF.
+ * Clona o registro da layer PANEL (sempre presente) com novo nome/handle/cor.
+ * Retorna true se inseriu (modifica o array lines in-place não é possível com splice retornando novo — retorna o array resultante).
+ */
+function ensureLayerDeclared(lines, layerName, colorIndex, newHandleHex) {
+  // localizar tabela LAYER: par "0/TABLE" seguido de "2/LAYER"
+  let tableStart = -1;
+  for (let i = 0; i < lines.length - 3; i += 2) {
+    if (lines[i].trim() === '0' && lines[i + 1].trim() === 'TABLE' &&
+        lines[i + 2].trim() === '2' && lines[i + 3].trim() === 'LAYER') {
+      tableStart = i;
+      break;
+    }
+  }
+  if (tableStart < 0) return { lines, added: false };
+
+  // varrer registros LAYER até ENDTAB; verificar se já existe e localizar o registro PANEL para clonar
+  let endTabLine = -1;
+  let cloneStart = -1, cloneEnd = -1;
+  let recStart = -1, recName = '';
+  for (let i = tableStart + 4; i < lines.length - 1; i += 2) {
+    const code = lines[i].trim();
+    const val = lines[i + 1].trim();
+    if (code === '0') {
+      if (recStart >= 0) {
+        if (recName.toUpperCase() === layerName.toUpperCase()) return { lines, added: false }; // já declarada
+        if (recName.toUpperCase() === 'PANEL' && cloneStart < 0) { cloneStart = recStart; cloneEnd = i; }
+      }
+      if (val === 'ENDTAB') { endTabLine = i; break; }
+      recStart = (val === 'LAYER') ? i : -1;
+      recName = '';
+    } else if (code === '2' && recStart >= 0 && !recName) {
+      recName = val;
+    }
+  }
+  if (endTabLine < 0 || cloneStart < 0) return { lines, added: false };
+
+  // clonar registro PANEL, removendo blocos 102 {..} e trocando handle/nome/cor
+  const src = lines.slice(cloneStart, cloneEnd);
+  const rec = [];
+  let handleDone = false, nameDone = false, colorDone = false;
+  for (let i = 0; i < src.length; i += 2) {
+    const code = src[i].trim();
+    const val = src[i + 1];
+    if (code === '102') { // pular bloco {ACAD_XDICTIONARY ... }
+      if (val.trim().startsWith('{')) {
+        while (i + 2 < src.length && src[i + 2].trim() !== '102') i += 2;
+        i += 2; // consome o "102 / }"
+      }
+      continue;
+    }
+    if (code === '5' && !handleDone) { rec.push(src[i], newHandleHex); handleDone = true; continue; }
+    if (code === '2' && !nameDone) { rec.push(src[i], layerName); nameDone = true; continue; }
+    if (code === '62' && !colorDone) { rec.push(src[i], `     ${colorIndex}`); colorDone = true; continue; }
+    rec.push(src[i], val);
+  }
+
+  const result = [...lines.slice(0, endTabLine), ...rec, ...lines.slice(endTabLine)];
+  return { lines: result, added: true };
+}
+
+/**
+ * Atualiza o $HANDSEED do cabeçalho para o próximo handle livre.
+ */
+function updateHandseed(lines, nextHandleHex) {
+  for (let i = 0; i < lines.length - 3; i += 2) {
+    if (lines[i].trim() === '9' && lines[i + 1].trim() === '$HANDSEED') {
+      if (lines[i + 2].trim() === '5') lines[i + 3] = nextHandleHex;
+      return;
+    }
+  }
+}
+
+/**
+ * Extracts the raw DXF text for each USINAGEM_18 entity from a template file.
+ * Returns array of { rawText, points } for each entity.
+ */
+function extractTemplateEntities(dxfContent) {
+  const lines = dxfContent.split(/\r?\n/);
+  let entitiesStart = -1;
+
+  for (let i = 0; i < lines.length; i++) {
+    const code = lines[i].trim();
+    const val = (i + 1 < lines.length) ? lines[i + 1].trim() : '';
+    if (code === '2' && val === 'ENTITIES') {
+      entitiesStart = i + 2; // skip "2 ENTITIES" pair, now at first entity's "0"
+      break;
+    }
+  }
+
+  if (entitiesStart < 0) return [];
+
+  const templateEntities = [];
+  let entityStart = -1;
+  let currentLayer = '';
+  let currentPoints = [];
+
+  let isCode = true;
+  for (let i = entitiesStart; i < lines.length; i++) {
+    const text = lines[i].trim();
+
+    if (isCode) {
+      const code = text;
+      const val = (i + 1 < lines.length) ? lines[i + 1].trim() : '';
+
+      if (code === '0') {
+        // Save previous entity if it was USINAGEM_18
+        if (entityStart >= 0 && currentLayer === 'USINAGEM_18') {
+          const rawText = lines.slice(entityStart, i).join('\r\n');
+          templateEntities.push({ rawText, points: [...currentPoints] });
+        }
+
+        if (val === 'ENDSEC') break;
+
+        entityStart = i;
+        currentLayer = '';
+        currentPoints = [];
+      } else if (code === '8') {
+        currentLayer = val;
+      } else if (code === '10') {
+        const x = parseFloat(val);
+        // Y coordinate (group code 20) should be the next pair
+        let y = null;
+        if (i + 2 < lines.length && lines[i + 2].trim() === '20') {
+          y = parseFloat(lines[i + 3].trim());
+        }
+        currentPoints.push({ x, y });
+      }
+      isCode = false;
+    } else {
+      isCode = true;
+    }
+  }
+
+  return templateEntities;
+}
+
+/**
+ * Generates a unique hex handle for DXF entities.
+ * Finds the highest existing handle and increments from there.
+ */
+function findMaxHandle(dxfContent) {
+  let maxHandle = 0x1000; // start high to avoid conflicts
+  const lines = dxfContent.split(/\r?\n/);
+
+  let isCode = true;
+  for (let i = 0; i < lines.length; i++) {
+    if (isCode) {
+      if (lines[i].trim() === '5' && i + 1 < lines.length) {
+        const h = parseInt(lines[i + 1].trim(), 16);
+        if (!isNaN(h) && h > maxHandle) maxHandle = h;
+      }
+      isCode = false;
+    } else {
+      isCode = true;
+    }
+  }
+
+  return maxHandle;
+}
+
+async function doInjectMuxarabi(arg) {
+  try {
+    const { drawingCode, sizeCode, thickness } = (typeof arg === 'object' && arg) ? arg : {};
+
+    if (!drawingCode || !sizeCode) {
+      return { ok: false, message: 'Código de desenho ou tamanho do muxarabi não informado.' };
+    }
+
+    // espessura da chapa (18mm ou 25mm) vinda da descrição do item
+    const th = String(thickness || '18').replace(/\D/g, '') || '18';
+    const usinagemLayer = `USINAGEM_${th}`;
+    const fresaLayer = `FRESA_12_${th}`;
+
+    console.log(`[Muxarabi Inject] ========== INICIANDO INJEÇÃO ==========`);
+    console.log(`[Muxarabi Inject] Desenho: ${drawingCode}, Tamanho: ${sizeCode}, Espessura: ${th}mm`);
+
+    // 1. Locate the ITE DXF file in the drawings folder
+    const cfg = currentCfg || (await loadCfg()) || {};
+    const dxfFolderPath = cfg?.drawings;
+
+    if (!dxfFolderPath) {
+      return { ok: false, message: 'A pasta de desenhos não está configurada nas preferências.' };
+    }
+
+    const iteFilename = `${drawingCode.toLowerCase()}.dxf`;
+    const iteFullPath = await findFileRecursive(dxfFolderPath, iteFilename);
+
+    if (!iteFullPath) {
+      return { ok: false, message: `Desenho "${iteFilename}" não encontrado na pasta de desenhos.` };
+    }
+
+    console.log(`[Muxarabi Inject] ITE encontrado: ${iteFullPath}`);
+
+    // 2. Read and parse the ITE DXF
+    const iteContent = await fsp.readFile(iteFullPath, 'utf8');
+    const iteParsed = parseDxfEntities(iteContent);
+
+    if (!iteParsed.pieceBounds) {
+      return { ok: false, message: 'Não foi possível identificar o retângulo da peça (layer PANEL) no desenho ITE.' };
+    }
+
+    if (iteParsed.hasUsinagem) {
+      return { ok: false, message: 'O desenho ITE já possui usinagens de muxarabi (layer USINAGEM_*). Injeção cancelada para evitar duplicação.' };
+    }
+
+    const { width: pieceW, height: pieceH, minX: pieceMinX, minY: pieceMinY } = iteParsed.pieceBounds;
+    console.log(`[Muxarabi Inject] Peça: ${pieceW}mm x ${pieceH}mm (origin: ${pieceMinX}, ${pieceMinY})`);
+
+    // 3. Locate and read the muxarabi template
+    const muxarabiDirPath = app.isPackaged
+      ? path.join(process.resourcesPath, 'Muxarabi')
+      : path.join(app.getAppPath(), 'Muxarabi');
+
+    const templateFilename = `${sizeCode.replace(/\s+/g, '').toUpperCase()}.dxf`;
+    const templateFullPath = await findFileRecursive(muxarabiDirPath, templateFilename.toLowerCase());
+
+    if (!templateFullPath) {
+      return { ok: false, message: `Template Muxarabi "${templateFilename}" não encontrado na pasta Muxarabi.` };
+    }
+
+    console.log(`[Muxarabi Inject] Template encontrado: ${templateFullPath}`);
+
+    const templateContent = await fsp.readFile(templateFullPath, 'utf8');
+    const templateEntities = extractTemplateEntities(templateContent);
+
+    console.log(`[Muxarabi Inject] Total entidades USINAGEM_18 no template: ${templateEntities.length}`);
+
+    // 4. Filter entities that fit COMPLETELY within the piece (with 50mm margin)
+    const MARGIN = 50;
+    const tolerance = 0.1; // floating point tolerance
+    const clipMinX = pieceMinX + MARGIN - tolerance;
+    const clipMaxX = pieceMinX + pieceW - MARGIN + tolerance;
+    const clipMinY = pieceMinY + MARGIN - tolerance;
+    const clipMaxY = pieceMinY + pieceH - MARGIN + tolerance;
+
+    const fittingEntities = templateEntities.filter(entity => {
+      return entity.points.every(p =>
+        p.x >= clipMinX && p.x <= clipMaxX &&
+        p.y !== null && p.y >= clipMinY && p.y <= clipMaxY
+      );
+    });
+
+    console.log(`[Muxarabi Inject] Entidades que cabem na peça: ${fittingEntities.length} de ${templateEntities.length}`);
+
+    if (fittingEntities.length === 0) {
+      return { ok: false, message: `Nenhuma entidade do muxarabi ${sizeCode} cabe nas dimensões da peça (${pieceW}x${pieceH}mm com margem de ${MARGIN}mm).` };
+    }
+
+    // 5. Generate new handles and inject entities into the ITE DXF
+    let maxHandle = findMaxHandle(iteContent);
+    const iteLines = iteContent.split(/\r?\n/);
+
+    // Find the correct 330 handle from the ITE file
+    let ownerHandle = null;
+    const firstIteEntity = iteParsed.entities[0];
+    if (firstIteEntity) {
+      const firstLines = iteLines.slice(firstIteEntity.rawStart, firstIteEntity.rawEnd + 1);
+      for (let i = 0; i < firstLines.length; i++) {
+        if (firstLines[i].trim() === '330') {
+          ownerHandle = firstLines[i + 1].trim();
+          break;
+        }
+      }
+    }
+
+    // 5a. Se a peça é de outra espessura (ex: 25mm), converter profundidades e layer de fresa da peça
+    if (usinagemLayer !== 'USINAGEM_18') {
+      for (let i = iteParsed.entitiesStartLine; i < iteParsed.entitiesEndLine - 1; i += 2) {
+        const code = iteLines[i].trim();
+        const val = (iteLines[i + 1] || '').trim();
+        if ((code === '38' || code === '39' || code === '30') && (val === '18.0' || val === '-18.0' || val === '18' || val === '-18')) {
+          iteLines[i + 1] = val.startsWith('-') ? `-${th}.0` : `${th}.0`;
+        }
+      }
+      for (let i = 0; i < iteLines.length; i++) {
+        if (iteLines[i].trim().toUpperCase() === 'FRESA_12_18') {
+          iteLines[i] = iteLines[i].replace(/FRESA_12_18/i, fresaLayer);
+        }
+      }
+      console.log(`[Muxarabi Inject] Peça convertida para ${th}mm (${fresaLayer})`);
+    }
+
+    // Build the new entity text with unique handles
+    const newEntityLines = [];
+    for (const entity of fittingEntities) {
+      maxHandle++;
+      const handleHex = maxHandle.toString(16).toUpperCase();
+
+      // Replace handle (5), owner (330), layer (8); strip material do template (347)
+      const entityLines = entity.rawText.split(/\r?\n/);
+      let handleReplaced = false;
+      let ownerReplaced = false;
+      let layerReplaced = false;
+
+      for (let i = 0; i < entityLines.length; i++) {
+        const code = entityLines[i].trim();
+        if (code === '5' && !handleReplaced) {
+          newEntityLines.push(entityLines[i]); // push the "  5"
+          i++;
+          newEntityLines.push(handleHex); // replace old handle with new
+          handleReplaced = true;
+        } else if (code === '330' && !ownerReplaced && ownerHandle) {
+          newEntityLines.push(entityLines[i]);
+          i++;
+          newEntityLines.push(ownerHandle);
+          ownerReplaced = true;
+        } else if (code === '8' && !layerReplaced && (entityLines[i + 1] || '').trim().toUpperCase() === 'USINAGEM_18') {
+          newEntityLines.push(entityLines[i]);
+          i++;
+          newEntityLines.push(usinagemLayer);
+          layerReplaced = true;
+        } else if (code === '347' && handleReplaced) {
+          i++; // referência de material do template não existe no ITE — descartar par
+        } else {
+          newEntityLines.push(entityLines[i]);
+        }
+      }
+    }
+
+    // Find insertion point: right before "  0\r\nENDSEC" at end of ENTITIES
+    const insertionLine = iteParsed.entitiesEndLine;
+    let resultLines = [
+      ...iteLines.slice(0, insertionLine),
+      ...newEntityLines,
+      ...iteLines.slice(insertionLine)
+    ];
+
+    // 6. Garantir que a layer de usinagem está declarada na tabela LAYER
+    // (entidade em layer não declarada faz o AutoCAD travar listando erros ao abrir)
+    maxHandle++;
+    const layerRes = ensureLayerDeclared(resultLines, usinagemLayer, 3, maxHandle.toString(16).toUpperCase());
+    resultLines = layerRes.lines;
+    if (layerRes.added) {
+      console.log(`[Muxarabi Inject] Layer ${usinagemLayer} declarada na tabela LAYER`);
+    } else {
+      maxHandle--; // handle reservado não foi usado
+    }
+
+    // 7. Atualizar $HANDSEED para além do último handle usado
+    updateHandseed(resultLines, (maxHandle + 1).toString(16).toUpperCase());
+
+    // 8. Backup do ITE original antes de sobrescrever
+    try {
+      await fse.ensureDir(REPLACE_BACKUP_DIR);
+      const backupName = `${path.basename(iteFullPath, path.extname(iteFullPath))}_backup_mx_${Date.now()}.dxf`;
+      await fse.copy(iteFullPath, path.join(REPLACE_BACKUP_DIR, backupName), { overwrite: true });
+    } catch (e) { /* continuar mesmo se backup falhar */ }
+
+    // 9. Write back the modified DXF
+    const resultContent = resultLines.join('\r\n');
+    await fsp.writeFile(iteFullPath, resultContent, 'utf8');
+
+    console.log(`[Muxarabi Inject] ✅ SUCESSO: ${fittingEntities.length} entidades injetadas em ${iteFullPath}`);
+
+    return {
+      ok: true,
+      path: iteFullPath,
+      injectedCount: fittingEntities.length,
+      totalInTemplate: templateEntities.length,
+      pieceDimensions: `${pieceW}x${pieceH}mm`,
+      thickness: th,
+      layer: usinagemLayer
+    };
+  } catch (e) {
+    console.error('[Muxarabi Inject] ❌ ERRO:', e.message || e);
+    console.error('[Muxarabi Inject] Stack:', e.stack);
+    return { ok: false, message: `Erro ao injetar muxarabi: ${String(e && e.message || e)}` };
+  }
+}
+
+ipcMain.handle('analyzer:injectMuxarabi', async (_e, arg) => {
+  return await doInjectMuxarabi(arg);
+});
+
+
 ipcMain.handle('analyzer:openMuxarabiDrawing', async (_e, arg) => {
   try {
     const sizeCode = (typeof arg === 'string') ? arg : (arg?.sizeCode || '');

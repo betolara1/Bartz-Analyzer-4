@@ -1,5 +1,5 @@
 import React from "react";
-import { Layers, ChevronDown, FileText } from "lucide-react";
+import { Layers, ChevronDown, FileText, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { Row } from "../../types";
 
@@ -27,6 +27,26 @@ export function MuxarabiSection({ isOpen, onToggle, data }: MuxarabiSectionProps
       }
     } catch (error: any) {
       toast.error(`Erro ao abrir desenho: ${error.message || error}`);
+    } finally {
+      toast.dismiss(id);
+    }
+  };
+
+  const handleInjectMuxarabi = async (drawingCode: string, sizeCode: string, thickness: string) => {
+    if (!drawingCode || !sizeCode) {
+      toast.error("Desenho ou tamanho do muxarabi não identificado.");
+      return;
+    }
+    const id = toast.loading(`Aplicando muxarabi ${sizeCode} (${thickness}mm) no desenho ${drawingCode}...`);
+    try {
+      const res = await (window as any).electron?.analyzer?.injectMuxarabi?.(drawingCode, sizeCode, thickness);
+      if (res?.ok) {
+        toast.success(`Muxarabi ${sizeCode} aplicado em ${drawingCode}: ${res.injectedCount} usinagens na layer ${res.layer} (peça ${res.pieceDimensions}).`);
+      } else {
+        toast.error(`Não foi possível aplicar o muxarabi: ${res?.message || "Erro desconhecido."}`);
+      }
+    } catch (error: any) {
+      toast.error(`Erro ao aplicar muxarabi: ${error.message || error}`);
     } finally {
       toast.dismiss(id);
     }
@@ -86,13 +106,15 @@ export function MuxarabiSection({ isOpen, onToggle, data }: MuxarabiSectionProps
                     <th className="text-left px-4 py-3 uppercase font-bold tracking-widest text-[9px]">Item Base</th>
                     <th className="text-left px-4 py-3 uppercase font-bold tracking-widest text-[9px]">Desenho</th>
                     <th className="text-left px-4 py-3 uppercase font-bold tracking-widest text-[9px]">Descrição</th>
-                    <th className="text-center px-4 py-3 uppercase font-bold tracking-widest text-[9px] w-[260px]">Ações</th>
+                    <th className="text-center px-4 py-3 uppercase font-bold tracking-widest text-[9px] w-[400px]">Ações</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#232323]">
                    {muxarabiItems.map((item: any, i: number) => {
                     const match = item.descricao?.match(/(\d+\s*x\s*\d+)/i);
                     const sizeCode = match ? match[1].replace(/\s+/g, '').toLowerCase() : null;
+                    const thMatch = item.descricao?.match(/(\d{2})\s*mm/i);
+                    const thickness = thMatch ? thMatch[1] : '18';
 
                     return (
                       <tr key={i} className="hover:bg-white/[0.02] transition-colors">
@@ -120,6 +142,15 @@ export function MuxarabiSection({ isOpen, onToggle, data }: MuxarabiSectionProps
                             >
                               <FileText className="h-3.5 w-3.5" />
                               Abrir Muxarabi
+                            </button>
+                            <button
+                              disabled={!item.desenho || !sizeCode}
+                              onClick={() => handleInjectMuxarabi(item.desenho, sizeCode!, thickness)}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 active:scale-[0.97] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                              title={`Injetar as usinagens do muxarabi ${sizeCode || 'desconhecido'} (chapa ${thickness}mm) no desenho ITE automaticamente (50mm da borda)`}
+                            >
+                              <Wand2 className="h-3.5 w-3.5" />
+                              Aplicar Muxarabi
                             </button>
                           </div>
                         </td>
