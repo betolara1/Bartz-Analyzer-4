@@ -103,12 +103,10 @@ export default function Dashboard() {
     exportacao: "",
     ok: "",
     erro: "",
-    logsErrors: "",
-    logsProcessed: "",
     drawings: "",
     enableAutoFix: true,
   });
-  const pickFolderOptions = ["entrada", "exportacao", "ok", "erro", "logsErrors", "logsProcessed", "drawings"] as const;
+  const pickFolderOptions = ["entrada", "exportacao", "ok", "erro", "drawings"] as const;
 
   // drawer de detalhes
   const [detailOpen, setDetailOpen] = useState(false);
@@ -281,7 +279,7 @@ export default function Dashboard() {
 
   // abrir seletor de pasta e preencher o campo
   async function pickFolder(
-    key: "entrada" | "exportacao" | "ok" | "erro" | "logsErrors" | "logsProcessed" | "drawings"
+    key: "entrada" | "exportacao" | "ok" | "erro" | "drawings"
   ) {
     try {
       const current = (cfg as any)[key] || "";
@@ -643,48 +641,6 @@ export default function Dashboard() {
                         className="bg-background border-border text-foreground text-sm flex-1"
                       />
                       <Button variant="outline" size="sm" onClick={() => pickFolder("drawings")} className="border-border hover:bg-muted shrink-0">
-                        <FolderOpen className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Grupo 3: Registros */}
-              <div className="bg-card rounded-xl border border-border p-4 space-y-4 shadow-sm">
-                <div className="flex items-center gap-2 border-b border-border pb-2 mb-2">
-                  <ListTodo className="h-4 w-4 text-[#9B59B6]" />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-[#9B59B6]">Registros (Logs)</span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* LOGS ERRORS */}
-                  <div className="space-y-2">
-                    <Label htmlFor="logsErrors" className="text-muted-foreground text-xs">Logs - Errors</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="logsErrors"
-                        value={cfg.logsErrors}
-                        onChange={(e) => setPaths({ logsErrors: e.target.value })}
-                        className="bg-background border-border text-foreground text-sm flex-1"
-                      />
-                      <Button variant="outline" size="sm" onClick={() => pickFolder("logsErrors")} className="border-border hover:bg-muted shrink-0">
-                        <FolderOpen className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* LOGS PROCESSED */}
-                  <div className="space-y-2">
-                    <Label htmlFor="logsProcessed" className="text-muted-foreground text-xs">Logs - Processed</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="logsProcessed"
-                        value={cfg.logsProcessed}
-                        onChange={(e) => setPaths({ logsProcessed: e.target.value })}
-                        className="bg-background border-border text-foreground text-sm flex-1"
-                      />
-                      <Button variant="outline" size="sm" onClick={() => pickFolder("logsProcessed")} className="border-border hover:bg-muted shrink-0">
                         <FolderOpen className="h-4 w-4" />
                       </Button>
                     </div>

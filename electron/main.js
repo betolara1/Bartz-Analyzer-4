@@ -62,7 +62,7 @@ async function checkWrite(dir) {
   }
 }
 async function testPaths(cfg) {
-  const keys = ['entrada', 'exportacao', 'ok', 'erro', 'logsErrors', 'logsProcessed', 'drawings'];
+  const keys = ['entrada', 'exportacao', 'ok', 'erro', 'drawings'];
   const out = {};
   for (const k of keys) out[k] = await checkWrite(cfg[k]);
   return out;
@@ -75,8 +75,6 @@ function buildNormalizedConfig(obj) {
     exportacao: normalizeWin(obj.exportacao || obj.working || ''),
     ok: normalizeWin(obj.ok || ''),
     erro: normalizeWin(obj.erro || ''),
-    logsErrors: normalizeWin(obj.logsErrors || ''),
-    logsProcessed: normalizeWin(obj.logsProcessed || ''),
     drawings: normalizeWin(obj.drawings || ''),
   };
 }
@@ -123,13 +121,6 @@ async function processOne(fileFullPath, cfg) {
     if (dest) {
       await fse.ensureDir(dest);
       await fse.move(fileFullPath, path.join(dest, base), { overwrite: true }).catch(() => { });
-    }
-
-    const logDir = isOK ? cfg.logsProcessed : cfg.logsErrors;
-    if (logDir) {
-      await fse.ensureDir(logDir);
-      const logName = base.replace(/\.xml$/i, '') + `_${isOK ? 'ok' : 'erro'}.json`;
-      await fsp.writeFile(path.join(logDir, logName), JSON.stringify(payload, null, 2), 'utf8');
     }
   } catch (e) {
     send('error', { where: 'processOne', message: String(e && e.message || e) });

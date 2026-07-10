@@ -22,8 +22,6 @@ type Paths = {
   exportacao?: string;
   finalOk?: string;
   finalErro?: string;
-  logsErrors?: string;
-  logsProcessed?: string;
   drawings?: string;
 };
 
@@ -33,8 +31,6 @@ export default function ConfigurationScreen({ onBack }: { onBack: () => void }) 
     exportacao: "",
     finalOk: "",
     finalErro: "",
-    logsErrors: "",
-    logsProcessed: "",
     drawings: "",
   });
 
@@ -84,8 +80,6 @@ export default function ConfigurationScreen({ onBack }: { onBack: () => void }) 
         <Row label="Pasta Final - OK" field="finalOk" placeholder="\\servidor\orcamentos\XML_FINAL\ok" />
         <Row label="Pasta Final - Erro" field="finalErro" placeholder="\\servidor\orcamentos\XML_FINAL\erro" />
         <Row label="Pasta de Desenhos" field="drawings" placeholder="\\servidor\desenhos" />
-        <Row label="Logs - Errors" field="logsErrors" placeholder="\\servidor\orcamentos\LOGS\errors" />
-        <Row label="Logs - Processed" field="logsProcessed" placeholder="\\servidor\orcamentos\LOGS\processed" />
 
         <div className="flex gap-3 pt-2">
           <Button onClick={handleSalvar} className="bg-yellow-600 hover:bg-yellow-500">Salvar</Button>

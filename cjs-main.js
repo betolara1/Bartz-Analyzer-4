@@ -50,8 +50,6 @@ async function testPathsAll(cfg) {
     "exportacao",
     "ok",
     "erro",
-    "logsErrors",
-    "logsProcessed",
     "drawings",
   ];
   const out = {};
@@ -493,14 +491,6 @@ async function processOne(fileFullPath, cfg) {
         } catch { }
       }
     }
-
-    const logDir = isOK ? cfg.logsProcessed : cfg.logsErrors;
-    if (logDir) {
-      await fse.ensureDir(logDir);
-      const logName = baseName.replace(/\.xml$/i, '') + `_${isOK ? 'ok' : 'erro'}.json`;
-      await fsp.writeFile(path.join(logDir, logName), JSON.stringify(analysis, null, 2), 'utf8');
-    }
-
     send('file-validated', { ...analysis, arquivo: finalPath, movedTo });
   } catch (e) {
     send('error', { where: 'processOne', message: String(e?.message || e) });
@@ -516,8 +506,6 @@ ipcMain.handle("settings:load", async () => {
     exportacao: normalizeWin(saved.exportacao || saved.working || ""),
     ok: normalizeWin(saved.ok || ""),
     erro: normalizeWin(saved.erro || ""),
-    logsErrors: normalizeWin(saved.logsErrors || ""),
-    logsProcessed: normalizeWin(saved.logsProcessed || ""),
     drawings: normalizeWin(saved.drawings || ""),
     enableAutoFix: !!saved.enableAutoFix,
   };
@@ -530,8 +518,6 @@ function sanitizeCfg(obj) {
     exportacao: normalizeWin(obj?.exportacao || obj?.working || ""),
     ok: normalizeWin(obj?.ok || ""),
     erro: normalizeWin(obj?.erro || ""),
-    logsErrors: normalizeWin(obj?.logsErrors || ""),
-    logsProcessed: normalizeWin(obj?.logsProcessed || ""),
     drawings: normalizeWin(obj?.drawings || ""),
     enableAutoFix: !!obj?.enableAutoFix,
   };
@@ -552,7 +538,7 @@ async function testPaths(obj) {
   for (const k of ["entrada", "exportacao", "ok", "erro"]) {
     res[k] = await checkWrite(payload[k]);
   }
-  for (const k of ["logsErrors", "logsProcessed", "drawings"]) {
+  for (const k of ["drawings"]) {
     res[k] = await checkWrite(payload[k]);
   }
   return res;
@@ -590,8 +576,6 @@ ipcMain.handle("analyzer:start", async (_e, overrideCfg) => {
       exportacao: normalizeWin(raw.exportacao || raw.working),
       ok: normalizeWin(raw.ok),
       erro: normalizeWin(raw.erro),
-      logsErrors: normalizeWin(raw.logsErrors),
-      logsProcessed: normalizeWin(raw.logsProcessed),
       enableAutoFix: !!raw.enableAutoFix,
       drawings: normalizeWin(raw.drawings),
     };
@@ -1069,13 +1053,6 @@ ipcMain.handle('analyzer:fillReferenciaByIds', async (_e, obj) => {
         }
       }
 
-      const logDir = isOK ? cfg.logsProcessed : cfg.logsErrors;
-      if (logDir) {
-        await fse.ensureDir(logDir);
-        const logName = baseName.replace(/\.xml$/i, '') + `_${isOK ? 'ok' : 'erro'}.json`;
-        await fsp.writeFile(path.join(logDir, logName), JSON.stringify(analysis, null, 2), 'utf8');
-      }
-
       send('file-validated', { ...analysis, arquivo: finalPath });
     } catch (e) {
       send('error', { where: 'fillReferenciaByIds-processOne', message: String(e?.message || e) });
@@ -1266,13 +1243,6 @@ ipcMain.handle('analyzer:replaceItemDescription', async (_e, obj) => {
             }
           } catch { }
         }
-      }
-
-      const logDir = isOK ? cfg.logsProcessed : cfg.logsErrors;
-      if (logDir) {
-        await fse.ensureDir(logDir);
-        const logName = baseName.replace(/\.xml$/i, '') + `_${isOK ? 'ok' : 'erro'}.json`;
-        await fsp.writeFile(path.join(logDir, logName), JSON.stringify(analysis, null, 2), 'utf8');
       }
 
       send('file-validated', { ...analysis, arquivo: finalPath });
@@ -2557,9 +2527,7 @@ ipcMain.handle('analyzer:fixFresa37to18', async (_e, dxfFilePath) => {
  * Agrega todos os arquivos processados hoje a partir dos logs gravados em logsProcessed e logsErrors.
  */
 async function aggregateTodayLogs() {
-  const cfg = currentCfg || (await loadCfg());
-  const logDirs = [cfg.logsProcessed, cfg.logsErrors].filter(d => !!d);
-  if (logDirs.length === 0) return { rows: [] };
+  return { rows: [] };
 
   const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
   const fileGroups = new Map();
@@ -2768,7 +2736,7 @@ async function saveDailyReport(reportData) {
 async function clearTargetFolders() {
   console.log('[Scheduler] ========== INICIANDO LIMPEZA DE PASTAS ==========');
   const cfg = currentCfg || (await loadCfg());
-  const foldersToClear = [cfg.ok, cfg.erro, cfg.logsProcessed, cfg.logsErrors].filter(d => !!d);
+  const foldersToClear = [cfg.ok, cfg.erro].filter(d => !!d);
 
   if (foldersToClear.length === 0) {
     console.log('[Scheduler] Nenhuma pasta configurada para limpeza.');

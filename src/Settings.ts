@@ -8,8 +8,6 @@ export type AppSettings = {
   working: string;
   ok: string;
   erro: string;
-  logsErrors: string;
-  logsProcessed: string;
   drawings: string;
 };
 
@@ -20,8 +18,6 @@ const store = new Store<AppSettings>({
     working: "",
     ok: "",
     erro: "",
-    logsErrors: "",
-    logsProcessed: "",
     drawings: "",
   },
 });
@@ -33,8 +29,6 @@ export const Settings = {
       working: store.get("working") ?? "",
       ok: store.get("ok") ?? "",
       erro: store.get("erro") ?? "",
-      logsErrors: store.get("logsErrors") ?? "",
-      logsProcessed: store.get("logsProcessed") ?? "",
       drawings: store.get("drawings") ?? "",
     };
   },
@@ -50,7 +44,7 @@ export const Settings = {
   async testPaths(data: Partial<AppSettings>) {
     const payload = { ...(Settings.load()), ...(data || {}) };
     const chk = {
-      entrada: false, working: false, ok: false, erro: false, logsErrors: false, logsProcessed: false, drawings: false,
+      entrada: false, working: false, ok: false, erro: false, drawings: false,
     };
     async function canWrite(p?: string) {
       if (!p) return false;
@@ -67,8 +61,6 @@ export const Settings = {
     chk.working = await canWrite(payload.working);
     chk.ok = await canWrite(payload.ok);
     chk.erro = await canWrite(payload.erro);
-    chk.logsErrors = await canWrite(payload.logsErrors);
-    chk.logsProcessed = await canWrite(payload.logsProcessed);
     chk.drawings = await canWrite(payload.drawings);
     return chk;
   },
