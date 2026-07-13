@@ -76,10 +76,10 @@ export default function ConfigurationScreen({ onBack }: { onBack: () => void }) 
 
       <div className="space-y-5 bg-[#111] border border-[#2C2C2C] rounded-xl p-6 max-w-[920px]">
         <Row label="Pasta de Entrada" field="entrada" placeholder="\\servidor\orcamentos\entrada" />
-        <Row label="Pasta de Exportação" field="exportacao" placeholder="\\servidor\orcamentos\exportacao" />
-        <Row label="Pasta Final - OK" field="finalOk" placeholder="\\servidor\orcamentos\XML_FINAL\ok" />
-        <Row label="Pasta Final - Erro" field="finalErro" placeholder="\\servidor\orcamentos\XML_FINAL\erro" />
-        <Row label="Pasta de Desenhos" field="drawings" placeholder="\\servidor\desenhos" />
+        <Row label="Pasta de Relatórios" field="exportacao" placeholder="\\servidor\orcamentos\exportacao" />
+        <Row label="Arquivos OK" field="finalOk" placeholder="\\servidor\orcamentos\XML_FINAL\ok" />
+        <Row label="Arquivos com Erro" field="finalErro" placeholder="\\servidor\orcamentos\XML_FINAL\erro" />
+        <Row label="Pasta dos Desenhos" field="drawings" placeholder="\\servidor\desenhos" />
 
         <div className="flex gap-3 pt-2">
           <Button onClick={handleSalvar} className="bg-yellow-600 hover:bg-yellow-500">Salvar</Button>

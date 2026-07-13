@@ -13,6 +13,8 @@ declare global {
         openDrawing?: (drawingCode: string) => Promise<{ ok: boolean; path?: string; message?: string }>;
         openMuxarabiDrawing?: (sizeCode: string) => Promise<{ ok: boolean; path?: string; message?: string }>;
         injectMuxarabi?: (drawingCode: string, sizeCode: string, thickness?: string) => Promise<{ ok: boolean; path?: string; message?: string; injectedCount?: number; totalInTemplate?: number; pieceDimensions?: string; thickness?: string; layer?: string }>;
+        loadHistory?: () => Promise<any[]>;
+        saveHistory?: (rows: any[]) => Promise<{ ok: boolean; count?: number; message?: string }>;
       };
       settings?: {
         load: () => Promise<any>;

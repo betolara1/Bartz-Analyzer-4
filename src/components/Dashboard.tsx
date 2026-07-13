@@ -88,7 +88,7 @@ export default function Dashboard() {
   const [rows, setRows] = useState<Row[]>([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] =
-    useState<"all" | "ok" | "erro" | "ferragens" | "muxarabi" | "coringa" | "curvo" | "duplado37mm" | "autofix" | "sem_codigo">("all");
+    useState<"all" | "ok" | "erro" | "muxarabi" | "coringa" | "curvo" | "duplado37mm" | "sem_codigo">("all");
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -120,6 +120,10 @@ export default function Dashboard() {
   const mounted = useRef(true);
   const isConnected = !!(window as any).electron?.analyzer;
 
+  // persistência do relatório: só salvar depois de restaurar o histórico do disco
+  const hydrated = useRef(false);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   function notifyFromPayload(p: any) {
     try {
       const base = (p?.arquivo || "").split(/[\\/]/).pop() || "arquivo";
@@ -136,6 +140,28 @@ export default function Dashboard() {
 
     (window as any).electron?.settings?.load?.()
       .then((sv: any) => sv && setCfg((c) => ({ ...c, ...sv, enableAutoFix: true })));
+
+    // Restaurar análises da sessão anterior (persistidas em disco pelo processo principal).
+    // Eventos que chegarem antes da restauração têm prioridade (merge por filename).
+    const historyPromise = (window as any).electron?.analyzer?.loadHistory?.();
+    if (historyPromise && typeof historyPromise.then === "function") {
+      historyPromise
+        .then((saved: any) => {
+          if (!mounted.current) return;
+          if (Array.isArray(saved) && saved.length > 0) {
+            setRows((prev: Row[]) => {
+              const have = new Set(prev.map((r) => r.filename));
+              const restored = saved.filter((r: any) => r?.filename && r?.fullpath && !have.has(r.filename));
+              return [...prev, ...restored];
+            });
+            toast.info(`${saved.length} análise(s) restaurada(s) da sessão anterior.`);
+          }
+        })
+        .catch(() => { })
+        .finally(() => { hydrated.current = true; });
+    } else {
+      hydrated.current = true; // preload sem suporte a histórico — segue sem persistência
+    }
 
     (window as any).electron?.analyzer?.onEvent?.((msg: any) => {
       if (!mounted.current) return;
@@ -225,30 +251,37 @@ export default function Dashboard() {
     return () => { mounted.current = false; };
   }, []);
 
+  // Autosave do relatório: qualquer mudança nas linhas é persistida em disco (debounce de 800ms).
+  // Assim, fechar o programa não perde as análises — elas voltam na próxima abertura.
+  useEffect(() => {
+    if (!hydrated.current) return;
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      (window as any).electron?.analyzer?.saveHistory?.(rows)?.catch?.(() => { });
+    }, 800);
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
+  }, [rows]);
+
   // KPIs
   const resumo = useMemo(() => {
     const ok = rows.filter((r) => r.status === "OK").length;
     const erro = rows.filter((r) => r.status === "ERRO").length;
-    const onlyFerr = rows.filter((r) => r.status === "FERRAGENS-ONLY").length;
     const mux = rows.filter((r) => (r.tags || []).includes("muxarabi")).length;
-    const auto = rows.filter((r) => (r.autoFixes || []).length > 0).length;
     const cor = rows.filter((r) => (r.tags || []).includes("coringa")).length;
     const curvo = rows.filter(hasCurvo).length;
     const dup37 = rows.filter((r) => (r.tags || []).includes("duplado37mm")).length;
     const semCod = rows.filter((r) => (r.tags || []).includes("sem_codigo")).length;
-    return { ok, erro, onlyFerr, mux, auto, cor, curvo, dup37, semCod };
+    return { ok, erro, mux, cor, curvo, dup37, semCod };
   }, [rows]);
 
   const kpis = useMemo(() => [
     { key: "all", title: "Todos", value: rows.length, icon: <Filter className="h-5 w-5" />, color: "#3498DB" },
     { key: "ok", title: "Corretos", value: resumo.ok, icon: <CheckCircle className="h-5 w-5" />, color: "#27AE60" },
     { key: "erro", title: "Inconformidades", value: resumo.erro, icon: <XCircle className="h-5 w-5" />, color: "#E74C3C" },
-    { key: "ferragens", title: "Ferragens-only", value: resumo.onlyFerr, icon: <Package className="h-5 w-5" />, color: "#F39C12" },
     { key: "muxarabi", title: "Muxarabi", value: resumo.mux, icon: <Grid3X3 className="h-5 w-5" />, color: "#9B59B6" },
     { key: "coringa", title: "Cor Coringa", value: resumo.cor, icon: <Grid3X3 className="h-5 w-5" />, color: "#E67E22" },
     { key: "duplado37mm", title: "Duplado 37MM", value: resumo.dup37, icon: <AlertTriangle className="h-5 w-5" />, color: "#C0392B" },
     { key: "sem_codigo", title: "Sem Código", value: resumo.semCod, icon: <AlertCircle className="h-5 w-5" />, color: "#E74C3C" },
-    { key: "autofix", title: "Auto-fixed", value: resumo.auto, icon: <Zap className="h-5 w-5" />, color: "#1ABC9C" },
     { key: "curvo", title: "Curvo", value: resumo.curvo, icon: <Grid3X3 className="h-5 w-5" />, color: "#ee5700ff" },
   ] as const, [rows.length, resumo]);
 
@@ -260,12 +293,10 @@ export default function Dashboard() {
         if (filter === "all") return true;
         if (filter === "ok") return r.status === "OK";
         if (filter === "erro") return r.status === "ERRO";
-        if (filter === "ferragens") return r.status === "FERRAGENS-ONLY" || (r.tags || []).includes("ferragens");
         if (filter === "muxarabi") return (r.tags || []).includes("muxarabi");
         if (filter === "coringa") return (r.tags || []).includes("coringa");
         if (filter === "duplado37mm") return (r.tags || []).includes("duplado37mm");
         if (filter === "sem_codigo") return (r.tags || []).includes("sem_codigo");
-        if (filter === "autofix") return (r.autoFixes || []).length > 0;
         if (filter === "curvo") return hasCurvo(r);
         return true;
       });
@@ -316,6 +347,8 @@ export default function Dashboard() {
     setCurrentPage(1);
     setDetailOpen(false);
     setDetailData(null);
+    // limpar também o histórico persistido em disco, imediatamente
+    (window as any).electron?.analyzer?.saveHistory?.([])?.catch?.(() => { });
     toast.success("Relatório de Atividade limpo com sucesso!");
   }
 
@@ -330,13 +363,14 @@ export default function Dashboard() {
       const res = await (window as any).electron?.analyzer?.clearTargetFolders?.();
       if (res?.ok) {
         toast.success(`Arquivos removidos com sucesso: ${res.count || 0}`);
-        // Limpar o relatório de atividade junto com a exclusão física
+        // Limpar o relatório de atividade junto com a exclusão física (inclusive o histórico em disco)
         setRows([]);
         setSearch("");
         setFilter("all");
         setCurrentPage(1);
         setDetailOpen(false);
         setDetailData(null);
+        (window as any).electron?.analyzer?.saveHistory?.([])?.catch?.(() => { });
         scan();
       } else {
         toast.error(`Falha ao remover: ${res?.message || "erro desconhecido"}`);
@@ -486,12 +520,10 @@ export default function Dashboard() {
   }, [bulkMoveEligible]);
 
   // métricas p/ card lateral
-  const { totalFiles, okFiles, errorFiles, ferragensFiles, autoFixedFiles, lastActivity } = useMemo(() => ({
+  const { totalFiles, okFiles, errorFiles, lastActivity } = useMemo(() => ({
     totalFiles: rows.length,
     okFiles: rows.filter(r => r.status === "OK").length,
     errorFiles: rows.filter(r => r.status === "ERRO").length,
-    ferragensFiles: rows.filter(r => r.status === "FERRAGENS-ONLY" || (r.tags || []).includes("ferragens")).length,
-    autoFixedFiles: rows.filter(r => (r.autoFixes || []).length > 0).length,
     lastActivity: rows[0]?.timestamp ?? "--:--",
   }), [rows]);
 
@@ -696,16 +728,6 @@ export default function Dashboard() {
                   <div className="text-2xl font-bold text-[#E74C3C]">{errorFiles}</div>
                   <div className="text-[10px] uppercase tracking-tighter text-muted-foreground font-medium">Com Erro</div>
                 </div>
-                <div className="bg-muted p-3 rounded-lg border border-border flex flex-col items-center justify-center space-y-1">
-                  <Package className="h-5 w-5 text-[#F39C12] opacity-80" />
-                  <div className="text-2xl font-bold text-[#F39C12]">{ferragensFiles}</div>
-                  <div className="text-[10px] uppercase tracking-tighter text-muted-foreground font-medium">Ferragens</div>
-                </div>
-                <div className="bg-muted p-3 rounded-lg border border-border flex flex-col items-center justify-center space-y-1">
-                  <Zap className="h-5 w-5 text-[#1ABC9C] opacity-80" />
-                  <div className="text-2xl font-bold text-[#1ABC9C]">{autoFixedFiles}</div>
-                  <div className="text-[10px] uppercase tracking-tighter text-muted-foreground font-medium">Auto-fix</div>
-                </div>
               </div>
 
               <div className="space-y-4 pt-2">
@@ -716,7 +738,7 @@ export default function Dashboard() {
                         <TrendingUp className="h-3 w-3" /> Taxa de Sucesso
                       </span>
                       <span className="text-2xl font-bold text-foreground">
-                        {totalFiles > 0 ? Math.round(((okFiles + ferragensFiles) / totalFiles) * 100) : 0}%
+                        {totalFiles > 0 ? Math.round((okFiles / totalFiles) * 100) : 0}%
                       </span>
                     </div>
                     <div className="text-right">
@@ -727,7 +749,7 @@ export default function Dashboard() {
                   <div className="h-1.5 w-full bg-background rounded-full overflow-hidden border border-border">
                     <div
                       className="h-full bg-gradient-to-r from-[#27AE60] to-[#2ECC71] transition-all duration-500"
-                      style={{ width: `${totalFiles > 0 ? ((okFiles + ferragensFiles) / totalFiles) * 100 : 0}%` }}
+                      style={{ width: `${totalFiles > 0 ? (okFiles / totalFiles) * 100 : 0}%` }}
                     />
                   </div>
                 </div>

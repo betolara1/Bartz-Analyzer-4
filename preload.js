@@ -29,6 +29,8 @@ contextBridge.exposeInMainWorld('electron', {
     getOrderComments: (numPedido) => ipcRenderer.invoke('analyzer:getOrderComments', numPedido),
     moveToOk: (filePath) => ipcRenderer.invoke('analyzer:moveToOk', filePath),
     clearTargetFolders: () => ipcRenderer.invoke('analyzer:clearTargetFolders'),
+    loadHistory: () => ipcRenderer.invoke('analyzer:loadHistory'),
+    saveHistory: (rows) => ipcRenderer.invoke('analyzer:saveHistory', rows),
   },
 
   settings: {

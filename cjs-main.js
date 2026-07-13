@@ -565,6 +565,37 @@ ipcMain.handle("settings:pickFolder", async (_e, initial) => {
   return res.filePaths[0];
 });
 
+/** ================== IPC: HISTÓRICO DE ANÁLISES (persistência entre sessões) ================== **/
+// Guarda o estado do relatório em disco para que fechar o programa não perca as análises.
+const HISTORY_FILE = path.join(app.getPath("userData"), "analysis-history.json");
+const HISTORY_MAX_ROWS = 3000;
+
+ipcMain.handle("analyzer:loadHistory", async () => {
+  try {
+    const raw = await fsp.readFile(HISTORY_FILE, "utf8");
+    const data = JSON.parse(raw);
+    const rows = Array.isArray(data?.rows) ? data.rows : (Array.isArray(data) ? data : []);
+    console.log(`[History] ${rows.length} análises restauradas de ${HISTORY_FILE}`);
+    return rows;
+  } catch {
+    return []; // primeiro uso ou arquivo inexistente
+  }
+});
+
+ipcMain.handle("analyzer:saveHistory", async (_e, rows) => {
+  try {
+    if (!Array.isArray(rows)) return { ok: false, message: "Formato inválido: esperado array de linhas." };
+    const capped = rows.slice(0, HISTORY_MAX_ROWS);
+    // escrita atômica: grava em .tmp e renomeia, para nunca corromper o histórico
+    const tmp = `${HISTORY_FILE}.tmp`;
+    await fsp.writeFile(tmp, JSON.stringify({ savedAt: new Date().toISOString(), rows: capped }), "utf8");
+    await fse.move(tmp, HISTORY_FILE, { overwrite: true });
+    return { ok: true, count: capped.length };
+  } catch (e) {
+    return { ok: false, message: String((e && e.message) || e) };
+  }
+});
+
 /** ================== IPC: ANALYZER ================== **/
 ipcMain.handle("analyzer:start", async (_e, overrideCfg) => {
   try {
