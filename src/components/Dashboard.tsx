@@ -123,25 +123,20 @@ const parseTimestamp = (timestampStr?: string): number => {
   return isNaN(dateObj.getTime()) ? Date.now() : dateObj.getTime();
 };
 
-const isWithinTimeRange = (timestampMs?: number, range?: string) => {
-  if (!timestampMs) return true;
-  const now = Date.now();
-  if (range === "1h") {
-    return now - timestampMs <= 60 * 60 * 1000;
+const getRowISODate = (r: Row): string => {
+  if (!r.timestamp) return "";
+  const match = r.timestamp.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  if (match) {
+    const [_, day, month, year] = match;
+    return `${year}-${month}-${day}`;
   }
-  if (range === "24h") {
-    return now - timestampMs <= 24 * 60 * 60 * 1000;
-  }
-  if (range === "today") {
-    const fileDate = new Date(timestampMs);
-    const nowDate = new Date();
-    return (
-      fileDate.getDate() === nowDate.getDate() &&
-      fileDate.getMonth() === nowDate.getMonth() &&
-      fileDate.getFullYear() === nowDate.getFullYear()
-    );
-  }
-  return true; // "all"
+  return "";
+};
+
+const getTodayISODate = () => {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 };
 
 const getPathIcon = (key: string) => {
@@ -163,7 +158,7 @@ export default function Dashboard() {
   const [search, setSearch] = useState("");
   const [filter, setFilter] =
     useState<"all" | "ok" | "erro" | "muxarabi" | "coringa" | "curvo" | "duplado37mm" | "sem_codigo" | "autofix">("all");
-  const [timeFilter, setTimeFilter] = useState<"all" | "1h" | "today" | "24h">("all");
+  const [selectedDay, setSelectedDay] = useState<string>(getTodayISODate());
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -342,26 +337,26 @@ export default function Dashboard() {
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
   }, [rows]);
 
-  // Filtro de tempo aplicado para os contadores e tabela de exibição
-  const rowsFilteredByTime = useMemo(() => {
-    return rows.filter((r) => isWithinTimeRange(r.timestampMs, timeFilter));
-  }, [rows, timeFilter]);
+  const rowsFilteredByDay = useMemo(() => {
+    if (!selectedDay) return rows;
+    return rows.filter((r) => getRowISODate(r) === selectedDay);
+  }, [rows, selectedDay]);
 
   // KPIs
   const resumo = useMemo(() => {
-    const ok = rowsFilteredByTime.filter((r) => r.status === "OK").length;
-    const erro = rowsFilteredByTime.filter((r) => r.status === "ERRO").length;
-    const mux = rowsFilteredByTime.filter((r) => (r.tags || []).some(t => normalizeTagForMatch(t).includes("muxarabi"))).length;
-    const cor = rowsFilteredByTime.filter((r) => (r.tags || []).some(t => normalizeTagForMatch(t).includes("coringa"))).length;
-    const curvo = rowsFilteredByTime.filter(hasCurvo).length;
-    const dup37 = rowsFilteredByTime.filter((r) => (r.tags || []).some(t => normalizeTagForMatch(t).includes("duplado"))).length;
-    const semCod = rowsFilteredByTime.filter((r) => (r.tags || []).some(t => normalizeTagForMatch(t).includes("semcodigo"))).length;
-    const autofix = rowsFilteredByTime.filter((r) => (r.autoFixes || []).length > 0).length;
+    const ok = rowsFilteredByDay.filter((r) => r.status === "OK").length;
+    const erro = rowsFilteredByDay.filter((r) => r.status === "ERRO").length;
+    const mux = rowsFilteredByDay.filter((r) => (r.tags || []).some(t => normalizeTagForMatch(t).includes("muxarabi"))).length;
+    const cor = rowsFilteredByDay.filter((r) => (r.tags || []).some(t => normalizeTagForMatch(t).includes("coringa"))).length;
+    const curvo = rowsFilteredByDay.filter(hasCurvo).length;
+    const dup37 = rowsFilteredByDay.filter((r) => (r.tags || []).some(t => normalizeTagForMatch(t).includes("duplado"))).length;
+    const semCod = rowsFilteredByDay.filter((r) => (r.tags || []).some(t => normalizeTagForMatch(t).includes("semcodigo"))).length;
+    const autofix = rowsFilteredByDay.filter((r) => (r.autoFixes || []).length > 0).length;
     return { ok, erro, mux, cor, curvo, dup37, semCod, autofix };
-  }, [rowsFilteredByTime]);
+  }, [rowsFilteredByDay]);
 
   const kpis = useMemo(() => [
-    { key: "all", title: "Todos", value: rowsFilteredByTime.length, icon: <Filter className="h-5 w-5" />, color: "#3498DB" },
+    { key: "all", title: "Todos", value: rowsFilteredByDay.length, icon: <Filter className="h-5 w-5" />, color: "#3498DB" },
     { key: "ok", title: "Corretos", value: resumo.ok, icon: <CheckCircle className="h-5 w-5" />, color: "#27AE60" },
     { key: "erro", title: "Inconformidades", value: resumo.erro, icon: <XCircle className="h-5 w-5" />, color: "#E74C3C" },
     { key: "muxarabi", title: "Muxarabi", value: resumo.mux, icon: <Grid3X3 className="h-5 w-5" />, color: "#9B59B6" },
@@ -370,11 +365,11 @@ export default function Dashboard() {
     { key: "sem_codigo", title: "Sem Código", value: resumo.semCod, icon: <AlertCircle className="h-5 w-5" />, color: "#E74C3C" },
     { key: "curvo", title: "Curvo", value: resumo.curvo, icon: <Grid3X3 className="h-5 w-5" />, color: "#ee5700ff" },
     { key: "autofix", title: "Robô Auto-Fix", value: resumo.autofix, icon: <Zap className="h-5 w-5" />, color: "#1ABC9C" },
-  ] as const, [rowsFilteredByTime.length, resumo]);
+  ] as const, [rowsFilteredByDay.length, resumo]);
 
   const filtered = useMemo(() => {
     const term = search.toLowerCase().trim();
-    return rowsFilteredByTime
+    return rowsFilteredByDay
       .filter((r) => {
         if (!term) return true;
         const nameMatch = r.filename.toLowerCase().includes(term);
@@ -399,7 +394,7 @@ export default function Dashboard() {
         if (filter === "autofix") return (r.autoFixes || []).length > 0;
         return true;
       });
-  }, [rowsFilteredByTime, search, filter]);
+  }, [rowsFilteredByDay, search, filter]);
 
   const totalPages = useMemo(() => Math.ceil(filtered.length / itemsPerPage), [filtered.length]);
   const paginatedData = useMemo(() => filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), [filtered, currentPage]);
@@ -620,11 +615,11 @@ export default function Dashboard() {
 
   // métricas p/ card lateral
   const { totalFiles, okFiles, errorFiles, lastActivity } = useMemo(() => ({
-    totalFiles: rows.length,
-    okFiles: rows.filter(r => r.status === "OK").length,
-    errorFiles: rows.filter(r => r.status === "ERRO").length,
-    lastActivity: rows[0]?.timestamp ?? "--:--",
-  }), [rows]);
+    totalFiles: rowsFilteredByDay.length,
+    okFiles: rowsFilteredByDay.filter(r => r.status === "OK").length,
+    errorFiles: rowsFilteredByDay.filter(r => r.status === "ERRO").length,
+    lastActivity: rowsFilteredByDay[0]?.timestamp ?? "--:--",
+  }), [rowsFilteredByDay]);
 
   // ---- UI ----
   return (
@@ -791,9 +786,33 @@ export default function Dashboard() {
                   <BarChart3 className="h-4 w-4 text-[#F1C40F]" />
                   <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Resultados do Dia</span>
                 </div>
-                <Badge variant="outline" className="text-[10px] border-border text-muted-foreground">
-                  Hoje, {new Date().toLocaleDateString('pt-BR')}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <input
+                      type="date"
+                      value={selectedDay}
+                      onChange={(e) => {
+                        setSelectedDay(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                      className="bg-muted hover:bg-muted/80 text-muted-foreground text-[10.5px] font-bold py-1 px-3.5 rounded-lg border border-border focus:outline-none focus:ring-1 focus:ring-primary/20 cursor-pointer transition-all"
+                      style={{ colorScheme: "dark" }}
+                    />
+                  </div>
+                  {selectedDay && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedDay("");
+                        setCurrentPage(1);
+                      }}
+                      className="h-6 px-2 text-[9px] text-muted-foreground hover:text-foreground font-bold uppercase tracking-wider bg-muted/40 hover:bg-muted/60 rounded-md border border-border/50"
+                    >
+                      Todas as datas
+                    </Button>
+                  )}
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -898,30 +917,6 @@ export default function Dashboard() {
               />
               <Filter 
                 className="absolute left-3 h-3.5 w-3.5 text-muted-foreground group-focus-within:text-primary transition-colors" 
-                style={{ top: "50%", transform: "translateY(-50%)" }}
-              />
-            </div>
-            <div className="relative">
-              <select
-                value={timeFilter}
-                onChange={(e) => {
-                  setTimeFilter(e.target.value as "all" | "1h" | "today" | "24h");
-                  setCurrentPage(1);
-                }}
-                className="appearance-none bg-card hover:bg-muted text-muted-foreground text-xs font-medium py-1.5 rounded-lg border border-border focus:outline-none focus:ring-1 focus:ring-primary/20 cursor-pointer transition-all"
-                style={{ paddingLeft: "2.25rem", paddingRight: "2rem" }}
-              >
-                <option value="all">Todas as datas</option>
-                <option value="1h">Última 1 hora</option>
-                <option value="today">Hoje</option>
-                <option value="24h">Últimas 24 horas</option>
-              </select>
-              <Calendar 
-                className="absolute left-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" 
-                style={{ top: "50%", transform: "translateY(-50%)" }}
-              />
-              <div 
-                className="absolute right-2.5 pointer-events-none border-l-4 border-r-4 border-t-4 border-transparent border-t-muted-foreground w-0 h-0" 
                 style={{ top: "50%", transform: "translateY(-50%)" }}
               />
             </div>
