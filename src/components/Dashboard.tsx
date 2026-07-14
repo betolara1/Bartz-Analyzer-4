@@ -184,7 +184,6 @@ export default function Dashboard({ onNavigateToConfig }: { onNavigateToConfig?:
     simplificado: "",
     enableAutoFix: true,
   });
-  const pickFolderOptions = ["entrada", "exportacao", "ok", "erro", "drawings", "simplificado"] as const;
 
   // drawer de detalhes
   const [detailOpen, setDetailOpen] = useState(false);
@@ -408,28 +407,7 @@ export default function Dashboard({ onNavigateToConfig }: { onNavigateToConfig?:
   const paginatedData = useMemo(() => filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage), [filtered, currentPage]);
 
   // ===== helpers/ações =====
-  function setPaths(patch: Partial<typeof cfg>) { setCfg(prev => ({ ...prev, ...patch })); }
 
-  // abrir seletor de pasta e preencher o campo
-  async function pickFolder(
-    key: PathConfigKey
-  ) {
-    try {
-      const current = (cfg as any)[key] || "";
-      const chosen = await (window as any).electron?.settings?.pickFolder?.(current);
-      if (chosen) setPaths({ [key]: chosen } as any);
-    } catch { }
-  }
-
-
-  async function savePaths() {
-    try {
-      await (window as any).electron?.settings?.save?.(cfg);
-      toast.success("Configurações salvas com sucesso!");
-    } catch (e: any) {
-      toast.error(`Falha ao salvar: ${String(e?.message || e)}`);
-    }
-  }
   async function start() {
     const ok = await (window as any).electron?.analyzer?.start?.(cfg);
     if (!ok) toast.error("Confira os caminhos e permissões.");
@@ -650,7 +628,7 @@ export default function Dashboard({ onNavigateToConfig }: { onNavigateToConfig?:
             <div className="text-lg font-semibold flex items-center gap-2">
               Bartz Verificador XML
               <span className="text-xs font-normal text-muted-foreground bg-muted border border-border px-2 py-0.5 rounded-full">
-                v5.1.0
+                v5.3.0
               </span>
             </div>
             {watchRoot && <div className="text-xs text-muted-foreground">Monitorando: {watchRoot}</div>}
@@ -676,134 +654,11 @@ export default function Dashboard({ onNavigateToConfig }: { onNavigateToConfig?:
         </div>
       </div>
 
-      {/* Caminhos + Relatório (2 colunas) */}
+      {/* Relatório + KPIs (2 colunas) */}
       <div className="px-6 mt-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Coluna 1 - Caminhos de Rede */}
-          <div className="space-y-6">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-muted-foreground">Caminhos de Rede</h3>
-              <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${monitoring ? "bg-[#27AE60]" : "bg-[#E74C3C]"}`} />
-                <span className="text-xs text-muted-foreground">{monitoring ? "Monitoramento Ativo" : "Monitoramento Parado"}</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-6">
-              {/* Grupo 1: Origem & Destino */}
-              <div className="bg-card rounded-xl border border-border p-4 space-y-4 shadow-sm">
-                <div className="flex items-center gap-2 border-b border-border pb-2 mb-2">
-                  <ArrowRightLeft className="h-4 w-4 text-[#3498DB]" />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-[#3498DB]">Origem & Destino</span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {PATH_CONFIGS.filter(c => c.key === "entrada" || c.key === "exportacao").map((config) => (
-                    <div key={config.key} className="space-y-2">
-                      <div className="flex items-center gap-1.5">
-                        <Label htmlFor={config.key} className="text-muted-foreground text-xs">{config.label}</Label>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button type="button" className="text-muted-foreground/60 hover:text-foreground transition-colors cursor-help">
-                              <CircleHelp className="h-3.5 w-3.5" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent className="bg-popover text-popover-foreground border border-border p-2 shadow-md max-w-xs">
-                            <p>{config.tooltip}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                      <div className="flex gap-2">
-                        <Input
-                          id={config.key}
-                          value={(cfg as any)[config.key] || ""}
-                          onChange={(e) => setPaths({ [config.key]: e.target.value })}
-                          className="bg-background border-border text-foreground text-sm flex-1 focus:border-primary"
-                          placeholder={config.placeholder}
-                        />
-                        <Button
-                          variant="outline" size="sm" title="Escolher pasta"
-                          onClick={() => pickFolder(config.key)}
-                          className="border-border hover:bg-muted shrink-0"
-                        >
-                          <FolderOpen className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Grupo 2: Resultados */}
-              <div className="bg-card rounded-xl border border-border p-4 space-y-4 shadow-sm">
-                <div className="flex items-center gap-2 border-b border-border pb-2 mb-2">
-                  <CheckCircle2 className="h-4 w-4 text-[#27AE60]" />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-[#27AE60]">Resultados & Desenhos</span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {PATH_CONFIGS.filter(c => c.key === "ok" || c.key === "erro" || c.key === "drawings" || c.key === "simplificado").map((config) => (
-                    <div key={config.key} className="space-y-2">
-                      <div className="flex items-center gap-1.5">
-                        <Label htmlFor={config.key} className="text-muted-foreground text-xs flex items-center gap-1">
-                          {getPathIcon(config.key)}
-                          {config.label}
-                        </Label>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button type="button" className="text-muted-foreground/60 hover:text-foreground transition-colors cursor-help">
-                              <CircleHelp className="h-3.5 w-3.5" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent className="bg-popover text-popover-foreground border border-border p-2 shadow-md max-w-xs">
-                            <p>{config.tooltip}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                      <div className="flex gap-2">
-                        <Input
-                          id={config.key}
-                          value={(cfg as any)[config.key] || ""}
-                          onChange={(e) => setPaths({ [config.key]: e.target.value })}
-                          className="bg-background border-border text-foreground text-sm flex-1 focus:border-primary"
-                          placeholder={config.placeholder}
-                        />
-                        <Button
-                          variant="outline" size="sm" onClick={() => pickFolder(config.key)}
-                          className="border-border hover:bg-muted shrink-0"
-                        >
-                          <FolderOpen className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" onClick={savePaths} className="gap-2 border-border bg-card hover:bg-muted text-xs h-9">
-                  <Save className="h-3.5 w-3.5" /> Salvar padrão
-                </Button>
-              </div>
-
-              <div className="flex items-center gap-3">
-                {!monitoring ? (
-                  <Button onClick={start} className="gap-2 bg-[#27AE60] hover:bg-[#27AE60]/90 h-9 px-4 text-xs font-semibold">
-                    <Play className="h-3.5 w-3.5" /> Iniciar Monitoramento
-                  </Button>
-                ) : (
-                  <Button onClick={stop} className="gap-2 bg-[#E74C3C] hover:bg-[#E74C3C]/90 h-9 px-4 text-xs font-semibold">
-                    <Pause className="h-3.5 w-3.5" /> Parar
-                  </Button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Coluna 2 - Relatório de Atividade */}
-          <div className="space-y-6">
+          {/* Coluna 1 - Relatório de Atividade */}
+          <div className="lg:col-span-1 space-y-6">
             <h3 className="text-sm font-medium text-muted-foreground mb-1">Relatório de Atividade</h3>
 
             <div className="bg-card rounded-xl border border-border p-6 space-y-6 shadow-sm">
@@ -884,51 +739,55 @@ export default function Dashboard({ onNavigateToConfig }: { onNavigateToConfig?:
                 </div>
               </div>
             </div>
+          </div>
 
+          {/* Coluna 2 - KPIs */}
+          <div className="lg:col-span-1 space-y-6">
+            <h3 className="text-sm font-medium text-muted-foreground mb-1">Métricas & Filtros</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {kpis.map((k: any) => {
+                const isActive = filter === k.key;
+                return (
+                  <button
+                    key={k.key}
+                    onClick={() => { setFilter(k.key); setCurrentPage(1); }}
+                    className={`group text-left bg-card border rounded-xl py-3 px-4 transition-all duration-300 relative overflow-hidden active:scale-95 ${isActive
+                      ? "border-primary shadow-[0_0_20px_rgba(0,0,0,0.2)] dark:shadow-[0_0_20px_rgba(0,0,0,0.4)]"
+                      : "border-border hover:border-primary/20 hover:-translate-y-1"
+                      }`}
+                    style={{
+                      borderColor: isActive ? k.color : '#2C2C2C',
+                      boxShadow: isActive ? `0 0 15px ${k.color}33, inset 0 0 10px ${k.color}11` : ''
+                    }}
+                  >
+                    {isActive && (
+                      <div
+                        className="absolute top-0 right-0 w-16 h-16 opacity-10 pointer-events-none"
+                        style={{ background: `radial-gradient(circle at center, ${k.color} 0%, transparent 70%)` }}
+                      />
+                    )}
+                    <div className="flex items-start justify-between mb-2">
+                      <div className={`p-2 rounded-lg bg-background border border-border transition-colors duration-300 ${isActive ? 'bg-opacity-50' : 'group-hover:bg-muted'}`} style={{ color: k.color }}>
+                        {React.cloneElement(k.icon as React.ReactElement, { className: "h-4 w-4" })}
+                      </div>
+                      {isActive && <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: k.color, boxShadow: `0 0 8px ${k.color}` }} />}
+                    </div>
+                    <div className="space-y-0.5">
+                      <div className={`text-[10px] uppercase tracking-widest font-bold transition-colors duration-300 ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}>
+                        {k.title}
+                      </div>
+                      <div className="text-2xl font-bold tracking-tight text-foreground">{k.value}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* KPIs + Tabela */}
+      {/* Tabela de Arquivos */}
       <div className="p-6 space-y-6">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-9 gap-4">
-          {kpis.map((k: any) => {
-            const isActive = filter === k.key;
-            return (
-              <button
-                key={k.key}
-                onClick={() => { setFilter(k.key); setCurrentPage(1); }}
-                className={`group text-left bg-card border rounded-xl p-4 transition-all duration-300 relative overflow-hidden active:scale-95 ${isActive
-                  ? "border-primary shadow-[0_0_20px_rgba(0,0,0,0.2)] dark:shadow-[0_0_20px_rgba(0,0,0,0.4)]"
-                  : "border-border hover:border-primary/20 hover:-translate-y-1"
-                  }`}
-                style={{
-                  borderColor: isActive ? k.color : '#2C2C2C',
-                  boxShadow: isActive ? `0 0 15px ${k.color}33, inset 0 0 10px ${k.color}11` : ''
-                }}
-              >
-                {isActive && (
-                  <div
-                    className="absolute top-0 right-0 w-16 h-16 opacity-10 pointer-events-none"
-                    style={{ background: `radial-gradient(circle at center, ${k.color} 0%, transparent 70%)` }}
-                  />
-                )}
-                <div className="flex items-start justify-between mb-3">
-                  <div className={`p-2 rounded-lg bg-background border border-border transition-colors duration-300 ${isActive ? 'bg-opacity-50' : 'group-hover:bg-muted'}`} style={{ color: k.color }}>
-                    {React.cloneElement(k.icon as React.ReactElement, { className: "h-4 w-4" })}
-                  </div>
-                  {isActive && <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: k.color, boxShadow: `0 0 8px ${k.color}` }} />}
-                </div>
-                <div className="space-y-0.5">
-                  <div className={`text-[10px] uppercase tracking-widest font-bold transition-colors duration-300 ${isActive ? 'text-foreground' : 'text-muted-foreground'}`}>
-                    {k.title}
-                  </div>
-                  <div className="text-2xl font-bold tracking-tight text-foreground">{k.value}</div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-2">
           <div className="flex items-center gap-4">
