@@ -79,6 +79,7 @@ graph TD
   - **Relatórios Diários:** Geração e exportação automática em lote de relatórios no formato **CSV** para a pasta de relatórios configurada às **11:30** e **17:30**, contendo metadados completos de inconformidades e decodificação otimizada para Excel (**BOM UTF-8**).
   - **Rotina de Limpeza:** Faxina programada diária às **17:30** para manter as pastas de processamento (`ok`, `erro`, `log_proc`, `log_erro`) limpas e otimizadas.
 - **Dashboard Interativo em Tempo Real:** Interface elegante construída com React, TypeScript e Tailwind CSS, alimentada por canais IPC de alto desempenho.
+  - **Interface Simplificada e Reorganizada (Layout 50/50):** Remoção das configurações de caminhos de rede do painel principal (centralizadas e gerenciadas exclusivamente pela tela de **Opções**), redistribuindo o Dashboard de forma equilibrada com o **Relatório de Atividade** no lado esquerdo e a grade de **Métricas & Filtros (KPIs)** no lado direito.
   - **Seletor de Datas Interativo por Calendário:** Calendário nativo `<input type="date">` acoplado ao cabeçalho que permite visualizar os resultados de qualquer dia do histórico e exportar relatórios manuais direcionados apenas a essa data.
   - **Busca Global Inteligente:** Campo de busca aprimorado que localiza arquivos simultaneamente pelo nome, erros, avisos, tags e status do robô.
   - **Visualização de Auto-Fix Simplificada:** Remoção de colunas redundantes e inclusão de distintivo visual **`AUTO-FIX`** integrado diretamente ao lado das tags do arquivo.
