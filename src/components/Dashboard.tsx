@@ -858,7 +858,7 @@ export default function Dashboard({ onNavigateToConfig }: { onNavigateToConfig?:
             <div className="text-lg font-semibold flex items-center gap-2">
               Bartz Verificador XML
               <span className="text-xs font-normal text-muted-foreground bg-muted border border-border px-2 py-0.5 rounded-full">
-                v5.10.0
+                v5.11.0
               </span>
             </div>
             {watchRoot && <div className="text-xs text-muted-foreground">Monitorando: {watchRoot}</div>}
@@ -1010,7 +1010,7 @@ export default function Dashboard({ onNavigateToConfig }: { onNavigateToConfig?:
                 disabled={!selectedDrawingPath || !cfg.drawingsCopy || copyingDrawingToMirror}
                 variant="outline"
                 className="text-xs font-bold uppercase py-2 px-3 rounded-lg active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 h-9 gap-1.5"
-                title={cfg.drawingsCopy ? "Copiar para a pasta espelho" : "Configure a Pasta de Cópia de Desenhos em Opções para habilitar"}
+                title={cfg.drawingsCopy ? "Enviar para a pasta espelho" : "Configure a Pasta de Cópia de Desenhos em Opções para habilitar"}
               >
                 <Copy className="h-3.5 w-3.5" />
               </Button>

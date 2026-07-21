@@ -75,7 +75,7 @@ export const PATH_CONFIGS: PathConfig[] = [
     key: "drawingsCopy",
     label: "Pasta de Cópia de Desenhos",
     placeholder: "\\\\Pc-alessandro\\dxf",
-    tooltip: "Pasta espelho para onde os desenhos podem ser copiados manualmente (botão \"Copiar\" na busca de desenhos). Correções automáticas do robô (fresa 37mm, muxarabi) também são replicadas aqui sozinhas, já que a alteração em si já foi automática. Deixe em branco para desativar."
+    tooltip: "Pasta espelho para onde os desenhos podem ser enviados manualmente (botão \"Enviar para\" na busca de desenhos). Correções automáticas do robô (fresa 37mm, muxarabi) também são replicadas aqui sozinhas, já que a alteração em si já foi automática. Deixe em branco para desativar."
   },
   {
     key: "simplificado",

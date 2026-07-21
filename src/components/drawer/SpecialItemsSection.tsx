@@ -214,10 +214,10 @@ export function SpecialItemsSection({ isOpen, onToggle, data }: SpecialItemsSect
                             disabled={!item.desenho}
                             onClick={() => handleCopyToMirror(item.desenho)}
                             className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-teal-500/10 hover:bg-teal-500/20 text-teal-400 border border-teal-500/20 active:scale-[0.97] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                            title="Copiar desenho para a pasta espelho"
+                            title="Enviar desenho para a pasta espelho"
                           >
                             <Copy className="h-3.5 w-3.5" />
-                            Copiar
+                            Enviar para
                           </button>
                         </div>
                       </td>
